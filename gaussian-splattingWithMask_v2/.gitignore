@@ -1,8 +1,21 @@
+# 构建/缓存
+build/
+__pycache__/
 *.pyc
-.vscode
-output
-build
-diff_rasterization/diff_rast.egg-info
-diff_rasterization/dist
-tensorboard_3d
-screenshots
+*.egg-info/
+dist/
+.ipynb_checkpoints/
+
+# 训练产物与日志(体积大且机器相关,不进仓库)
+output/
+loss_log.csv
+val_metrics.csv
+
+# 操作系统
+Thumbs.db
+.DS_Store
+
+# glm 文档(HTML,体积大且非编译依赖;头文件 glm/glm 保留)
+submodules/diff-gaussian-rasterization/third_party/glm/doc/
+submodules/diff-gaussian-rasterization/third_party/glm/test/
+submodules/diff-gaussian-rasterization/third_party/glm/util/
