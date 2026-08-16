@@ -279,8 +279,8 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                 print("\n[ITER {}] Saving Gaussians".format(iteration))
                 scene.save(iteration)
 
-            # 阶段2新功能：val10 渲染升级为每 100 轮（含第 1 轮），输出 RGB + 光栅化器法向图
-            if val_cameras and iteration % 100 == 1:
+            # 阶段2新功能：val10 渲染为每 1000 轮（含第 1 轮），输出 RGB + 光栅化器法向图
+            if val_cameras and iteration % 1000 == 1:
                 render_val_cameras(val_cameras, gaussians, pipe, background, iteration, scene.model_path,
                                    SPARSE_ADAM_AVAILABLE, dataset.train_test_exp, elapsed_sec=time.time() - train_start_time)
 
