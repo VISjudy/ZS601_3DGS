@@ -62,6 +62,9 @@ class ModelParams(ParamGroup):
         self.init_2d = False
         # z 轴缩放初始值（log 空间），exp 后约 4.5e-5，参考 2DGS
         self.init_2d_z = -10.0
+        # init_2d 专用初始不透明度：激光点云初始化已可靠，从 0.5 起步
+        # （非 init_2d 时仍用 3DGS 默认 0.1，不受此参数影响）
+        self.init_2d_opacity = 0.5
         # 新功能：2D 椭球形状约束（默认关闭）——训练中每步把 z 轴缩放复位为极小值，
         # 保持高斯始终扁平；与 --init_2d 独立：B 组两个都开，C 组只开 --init_2d（允许厚度自由优化）
         self.freeze_2d_z = False

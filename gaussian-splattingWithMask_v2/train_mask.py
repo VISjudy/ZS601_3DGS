@@ -64,9 +64,9 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
     # 参数合法性：形状约束必须配合 2D 椭球初始化使用（否则初始 z 尺度无意义）
     if dataset.freeze_2d_z and not dataset.init_2d:
         sys.exit("[参数错误] --freeze_2d_z 需与 --init_2d 同时开启")
-    gaussians = GaussianModel(dataset.sh_degree, opt.optimizer_type, dataset.init_2d, dataset.init_2d_z, dataset.freeze_2d_z)
-    print("[实验配置] init_2d(2D椭球初始化)={} / freeze_2d_z(训练中形状约束)={}".format(
-        dataset.init_2d, dataset.freeze_2d_z))
+    gaussians = GaussianModel(dataset.sh_degree, opt.optimizer_type, dataset.init_2d, dataset.init_2d_z, dataset.freeze_2d_z, dataset.init_2d_opacity)
+    print("[实验配置] init_2d(2D椭球初始化)={} / freeze_2d_z(训练中形状约束)={} / init_2d_opacity={}".format(
+        dataset.init_2d, dataset.freeze_2d_z, dataset.init_2d_opacity))
     scene = Scene(dataset, gaussians)
     gaussians.training_setup(opt)
     if checkpoint:

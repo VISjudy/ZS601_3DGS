@@ -109,13 +109,16 @@ class GaussianModel:
         self.rotation_activation = torch.nn.functional.normalize
 
 
-    def __init__(self, sh_degree, optimizer_type="default", init_2d=False, init_2d_z=-10.0, freeze_2d_z=False):
+    def __init__(self, sh_degree, optimizer_type="default", init_2d=False, init_2d_z=-10.0, freeze_2d_z=False, init_2d_opacity=0.5):
         self.active_sh_degree = 0
         self.optimizer_type = optimizer_type
         self.max_sh_degree = sh_degree  
         # 新功能 1：2D 椭球初始化开关与 z 轴极小值（log 空间）
         self.init_2d = init_2d
         self.init_2d_z = init_2d_z
+        # init_2d 专用初始不透明度：激光点云初始化位置/法向已可靠，从 0.5 起步
+        # （默认 3DGS 初始化的 0.1 不变），让 median depth/法向靶标更早覆盖全图
+        self.init_2d_opacity = init_2d_opacity
         # 新功能：形状约束开关（与 init_2d 独立）：训练中是否把 z 轴缩放复位保持扁平
         self.freeze_2d_z = freeze_2d_z
         self._xyz = torch.empty(0)
@@ -267,7 +270,11 @@ class GaussianModel:
                 PlyData([PlyElement.describe(elements, 'vertex')]).write(export_path)
                 print("[init_2d] 初始化点云（含法向量）已导出：{}".format(export_path))
 
-        opacities = self.inverse_opacity_activation(0.1 * torch.ones((fused_point_cloud.shape[0], 1), dtype=torch.float, device="cuda"))
+        # 新功能：init_2d 时不透明度从 init_2d_opacity（默认 0.5）起步，其余保持 3DGS 默认 0.1
+        init_opacity = self.init_2d_opacity if self.init_2d else 0.1
+        if self.init_2d:
+            print("[init_2d] 初始不透明度：{:.2f}".format(init_opacity))
+        opacities = self.inverse_opacity_activation(init_opacity * torch.ones((fused_point_cloud.shape[0], 1), dtype=torch.float, device="cuda"))
 
         self._xyz = nn.Parameter(fused_point_cloud.requires_grad_(True))
         self._features_dc = nn.Parameter(features[:,:,0:1].transpose(1, 2).contiguous().requires_grad_(True))
