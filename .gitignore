@@ -33,3 +33,6 @@ _v1_git_backup/
 _mask_*.png
 ZS601_3DGS_stagesTEST.ipynb
 ZS601_3DGS_stagestest1.ipynb
+
+# ===== 本地保留的 v1 代码副本（v2-dev 分支不管理，避免切换分支时被移除）=====
+/gaussian-splattingWithMask/
