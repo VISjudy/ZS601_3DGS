@@ -1,0 +1,34 @@
+# ===== 编译产物 / 缓存 =====
+build/
+__pycache__/
+.ipynb_checkpoints/
+*.egg-info/
+*.pyc
+*.pyd
+*.so
+*.obj
+*.lib
+*.exp
+*.o
+
+# ===== 第三方可选组件（Colab 用 git clone 安装）=====
+submodules/fused-ssim/
+submodules/fused-ssim000/
+fused-ssim/
+fused-ssim000/
+
+# ===== 实验产物 / 日志 =====
+output/
+loss_log.csv
+val_metrics.csv
+*.pth
+
+# ===== 分发包（由仓库本身替代）=====
+*.zip
+
+# ===== IDE / 临时文件 =====
+.qoder/
+.qoder-cn/
+_mask_*.png
+ZS601_3DGS_stagesTEST.ipynb
+ZS601_3DGS_stagestest1.ipynb

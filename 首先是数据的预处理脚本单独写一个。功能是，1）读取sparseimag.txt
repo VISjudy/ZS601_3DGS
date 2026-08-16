@@ -1,0 +1,93 @@
+首先是数据的预处理脚本单独写一个。功能是，1）读取sparse/images.txt相机外参文件，切分训练集和测试集，按5%比例随机选测试集，输出训练和测试的相机外参images.txt文件。2）从测试集的images.txt中随机再选10张图的相机外参信息进行额外的文件保存 images-val10.txt，用于训练过程中的可视化渲染结果，比如我会在每100轮渲染一次这10张图的法向量贴图、rgb图等，查看渲染的效果，方便我观察训练的变化。3）将每10轮的训练的每项 loss 值记录下来，等训练到 test_iteration 的时候保存一次loss的训练曲线图。4）将images文件夹同目录下的 激光点云文件.las 转换成 colmap 格式的 points3d.txt 格式出来，并替换掉 sparse/points3d.txt 。 5）法向量计算预处理，将sparse/points3d.txt 点云（数据集里我已经替换成了3cm采样的彩色激光点云），逐点计算法向量，然后将法向量的方向对于一个颜色，将这个颜色值渲染成法向量方向图，效果是法向量方向接近的点呈现的颜色是趋向一致的，仅测试从步骤2）中的10张相机外参的图即可，方便我验证法向量的计算结果，文件也保存到中间过程的文件夹里集中。
+
+以下优化都是针对提升3dgs结果的几何准确性和图像渲染质量。使得高斯尽可能在物体的表面，且不出现大椭球、奇怪且不符合常规的狭长椭球形状。
+新功能1——2d椭球初始化。
+目标是修改3dgs初始化的过程，参考2dgs和pgsr 文章，让高斯椭球初始化的时候成垂直于法向量的方向2d球，z轴压缩到0，将椭球尽可能的压缩成平面。
+做消融实验，验证2d椭球初始化对几何和图像质量的影响。
+训练细节：1）超参数选择。原始输入图像有 2700 张左右，先定个训练轮次为 15w 轮，按照每张图像至少看50次这样优化先。另外，保留原来的ADC自适应密度控制，但是由于点数过多且含小部分噪声，增加ADC的间隔（参考 let's go,lod 3dgs项目）为--densification_interval 10000。点位置很准了，因此 lr 设置为默认值得 1/10 ，--position_lr_init 0.000016；--sh_degree 2 减少训练参数提速；--densify_until_iter 10w 提前结束致密化让后续专注优化外观；--opacity_reset_interval 设置为训练轮数，即不reset。--scaling_lr 0.0015 尺寸变化率不用太大。
+2）训练的loss等都不修改。中途需要每100轮（从第1轮开始）渲染 images-val10.txt 一次法向量方向图和rgb图方便查看。
+
+新功能2——新增法向量loss
+在训练过程中新增一个法向量约束loss。目的是约束新增高斯和已有高斯椭球的形状，使其尽可能贴合物体表面，同个平面的尽可能拥有同方向的法向量，形状会趋向于法向量的垂直方向的扁平椭球。
+
+
+1、
+
+
+
+研究训练轮次与迭代次数的影响。观察loss和psnr等的曲线。寻找规律。【可以完全从blender数据集做，独立做】
+
+
+【在下面该版本上还挑了几个bug。1）装submodul 的fused-ssim需要重新clone再install。2）数据太多爆ram，分批100张加载。3）为了支持 --data_device cpu 需要修改代码使其适配新增的输入参数。需要修改 gaussian_renderer/__init__.py:render()  等代码。 4）masks 训练的时候需要，主体部分是黑色，已二值掩码与原图叠加，黑色部分代表该部分像素为有效像素，保留这些rgb值来计算训练以及测试集的loss，注意评估时也需要加mask的逻辑。而不是将原图变黑色。】
+
+经验：bug出现的很不应该，agent为了越用越聪明，需要plan模式下记录验收标准，而不是一股脑说你要甚么。另外总结出经验需要制作成 rule 放到 agent.md，长期记忆文件需要更新维护，做2层，顶层是压缩了总结一次上下文得到的。每次项目修改和对话时，需要先读一遍记忆、上下文文档，避免每次都重复读一遍代码浪费时间，也方便迁移和维护项目。
+————————————————————————————————————————————————————————————
+
+# 任务指令：3DGS 几何质量提升（分阶段执行版）
+
+## 0. 项目背景与通用要求
+
+**背景**：
+- 项目根目录：`d:\hhs\gaussian-splattingWithMask-0811\gaussian-splattingWithMask`（下文相对路径以此为基准）
+- 数据目录：`D:\LCC\ZS601_meetingroom_dev\dataset`（数据根目录可换，例如在colab中跑。COLMAP 文本格式 `sparse/0/{cameras,images,points3D}.txt`；图像 2694 张位于 `images/map_0/camera_0/*.jpg`，mask 二值 PNG 在 `masks/` 对应结构；同目录有激光点云源文件 `ZS601_3cm_sample.las`，转换后点云为**百万级**）
+- 环境：Windows + PowerShell（不支持 `&&`，用 `;` 分隔）；CUDA 光栅化器改动后需重编译 `submodules/diff-gaussian-rasterization`
+- 训练入口用 `train_mask.py`，不改 `train.py` 行为
+- 现有代码要点：`gaussian_renderer/__init__.py` 的 `render()` 已输出 `depth`；`gaussian_model.py` 为标准 3DGS；`dataset_readers.py` 已支持 mask 与 COLMAP 文本/二进制；光栅化器 `forward.cu` 已有 depth 输出通道（后续加 normal 通道可参考）
+
+**通用硬性要求（所有阶段必须遵守）**：
+1. **反馈机制（最高优先级）**：每个新功能必须有直观验证——print 关键数值 + 输出可视化文件（图片）。本任务各阶段的具体反馈输出见各阶段"反馈产物"小节
+2. **向后兼容**：新功能默认关闭或参数显式开启；不加新参数时 `train_mask.py` 行为与现在完全一致
+3. **代码风格**：与现有代码一致（中文注释、命名习惯，参考 `train_mask.py`、`gaussian_model.py`）
+4. **可运行验证**：每完成一个子任务给出可直接执行的验证命令
+5. 所有随机切分/选择操作支持 `--seed` 参数（默认 `42`），保证可复现
+6. **执行节奏（重要）**：必须严格按阶段顺序执行；阶段 1 验收通过后才能开始阶段 2；每个阶段先冒烟短训跑通全链路，再正式训练
+
+---
+
+## 阶段 0：数据预处理（一次性前置工作）
+
+**产出**：独立脚本 `preprocess.py`，输入 `--data_path D:\LCC\ZS601_meetingroom_dev\dataset`、`--seed 42`、`--val_num 10`、`--test_ratio 0.05`、`--intermediate <默认 data_path/intermediate>`。中间结果全部集中到 intermediate 目录。每步打印进度与统计。
+
+**0-1 激光点云转换**：读取 `ZS601_3cm_sample.las`（laspy，未装则 `pip install laspy`），提取 XYZ+RGB，转 COLMAP `points3D.txt` 格式（`POINT3D_ID X Y Z R G B ERROR TRACK[]`，ERROR=-1，TRACK 可留空），**替换 `sparse/0/points3D.txt`**（原文件备份为 `points3D.txt.bak`）。注意：
+- 百万级点，读写/处理必须 numpy 向量化或分块，禁止逐点 Python 循环
+- 打印 las 与 COLMAP 坐标范围做对照；确认单位/轴向一致
+- 同步生成带颜色 `sparse/0/points3D.ply`（若已存在先删除，否则 `dataset_readers.py` 不重建；ply 的 nx,ny,nz 由 0-2 写入）
+- 打印：点数、XYZ 范围、RGB 有效性（非全 0）、点云质心与相机质心距离
+
+**0-2 法向量计算**：对百万级点云逐点算法向量（KNN k=16 邻域 PCA，最小特征值特征向量；`scipy.spatial.cKDTree` 建索引，numpy 批量向量化，禁止逐点循环；内存紧张则分块处理）。统一朝向（与"质心到该点方向"点积为负则翻转）。写入 `points3D.ply` 的 nx,ny,nz。打印法向量统计与耗时。
+
+**0-3 训练/测试切分**：解析 `sparse/0/images.txt`（每图两行：外参行+2D 点行，图像名含子目录如 `map_0/camera_0/xxx.jpg`，按完整记录切分）：
+- 5% 随机测试集（固定 seed）：训练集覆盖写回 `sparse/0/images.txt`；测试集存 `sparse/0/images_test.txt`（完整 COLMAP 格式）
+- 测试集中再随机选 10 张存 `sparse/0/images-val10.txt`（完整格式）
+- 打印总数/训练数/测试数/val10 图像名列表（列表同时写 intermediate 留存）
+
+**0-4 法向量方向图验证渲染**：仅用 `images-val10.txt` 的 10 张相机（`cameras.txt` 取内参，PINHOLE），把**点云法向量**投影渲染成法向量方向图（numpy 向量化：百万点投影→z-buffer 取最近→颜色 `color=(n+1)/2`），输出 `intermediate/normal_visual/val{idx}_normal.png`，配同视角真实图像副本 `val{idx}_gt.png`。打印每张图有效像素比例。**输出2，基于当前训练轮次的3dgs render的 RGB 图**。
+
+**阶段 0 验收**：脚本一键跑通，产物齐全（替换后的 points3D.txt/points3D.ply 含颜色法向量、images.txt/images_test.txt/images-val10.txt、10 张法向量方向图），法向量方向图颜色连续平滑（同平面同色）。
+
+---
+
+## 阶段 1：新功能 1（2D 椭球初始化）+ 训练验证
+
+### 1-A 功能实现（修改 `scene/gaussian_model.py`）
+
+目标：初始化高斯为"垂直于点云法向量的扁平 2D 圆盘"（z 轴压缩极小），训练中 densify 新增高斯同样扁平。**只改初始化与约束，不改渲染算法**（参考 2DGS：https://github.com/hbb1/2d-gaussian-splatting 与 PGSR）：
+1. **旋转初始化**：用 ply 法向量（`BasicPointCloud.normals`，`fetchPly` 已读取）构造旋转矩阵，使第 3 列（最小缩放轴）对齐法向量（参考 2DGS `gaussian_model.py` 四元数构造；法向量长度为零回退单位四元数）
+2. **scale 初始化**：z 分量极小（log 空间约 -10，即 exp 后 ~4.5e-5，参考 2DGS），x/y 保持 `distCUDA2` 现有逻辑
+3. **z 轴冻结**：scaling z 不参与优化（z 通道 lr=0 或每步强制复位极小值；`densify_and_split` 的 `new_scaling` z 同样复位）
+4. 新参数 `--init_2d`（默认 False）、`--init_2d_z`（z 极小值默认参考 2DGS）
+
+### 1-B 训练脚本增强（`train_mask.py` + 新增评估工具）
+
+1. **loss 记录（D2）**：每 10 轮（`iteration % 10 == 0`）将 {iteration, L1, SSIM loss, depth loss, total} 追加到 `<model_path>/loss_log.csv`；`test_iterations`（沿用现有参数）评估时输出 `loss_curves_{iteration}.png`（matplotlib，总曲线 + 前 20000 轮放大；缺 matplotlib 提示安装命令）
+2. **val10 渲染（D1 阶段 1 版）**：新参数 `--val_file`（指向 `images-val10.txt`，默认空=关闭）。开启后每 500 轮（`iteration % 500 == 1`，含第 1 轮）渲染全部 val10 相机，输出 **RGB 渲染图（基于当前轮次 3DGS 模型 render）** 与真实图像副本，存 `<model_path>/val_render/iter_{iteration}/`。**本阶段不输出法向量图**（依赖光栅化器 normal 通道，阶段 2 补）
+3. **评价指标工具（`evaluate.py`）**，输入模型目录与测试集，输出：
+   - 图像指标：test 集 PSNR / L1 / SSIM（复用 `metrics.py` 逻辑或自行计算）
+   - **几何指标（cloud2cloud）**：训练后高斯中心点（ply xyz）与激光点云 `points3D.txt` XYZ 最近邻距离统计（`scipy.spatial.cKDTree`，百万点向量化/分块；输出方向说明与 mean/median/RMSE/90 分位）
+   - 输出到 `<model_path>/metrics.json` 与终端表格
+
+### 1-C 验证执行
+
+1. **冒烟验证**（先跑通全链路）：`python train_mask.py -s <data> --init_2d --iterations 2000 --val_file <data>/sparse/0/images-val10.txt --test_iterations 2000 --save_iterations 2000`。确认：初始化 print 各轴 scale 统计（z 轴极小）；`--init_2d` 初始化 ply 导出 `intermediate/init_2d/`；val10 RGB 渲染图生成；loss_log.csv 与曲线图生成；`evaluate.py` 跑通出指标
+2. **正式训练**（两组，训练超参完全一致，仅变量不同）：
+   - 配置：`--iterations 150000 --sh_degree 2 --position_lr_init 0.000016 --position_lr_final 0.00000016 --position_lr_max_steps 150000 --scaling_lr 0.0015 --densification_interval 10000 --densify_until_iter 100000 --opacity_reset_interval 150000 --densify_grad_threshold 0.0002 --seed 42 --val_file <data>/sparse/0/images-val10.txt --test_iterations 50000 100000 150000 --save_iter
