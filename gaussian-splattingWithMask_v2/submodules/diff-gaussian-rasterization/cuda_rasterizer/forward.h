@@ -65,6 +65,8 @@ namespace FORWARD
 		float* out_color,
 		float* depths,
 		float* depth,
+		// Stage-2: per-Gaussian camera-facing normals (input, 3*P) for normal-map compositing
+		const float* normals,
 		// Stage-2: alpha-composited normal map output (3*H*W)
 		float* out_normal);
 }
