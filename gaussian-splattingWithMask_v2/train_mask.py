@@ -93,8 +93,8 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
             f.write("iteration,L1,SSIM_loss,depth_loss,normal_loss,scale_reg,size_reg,total\n")
 
     # 阶段2新功能：打印法向约束 loss 配置，确认实验变量生效
-    print("[法向约束配置] lambda_scale={} / lambda_normal={} / lambda_size={}（0 = 对应项关闭）".format(
-        dataset.lambda_scale, dataset.lambda_normal, dataset.lambda_size))
+    print("[法向约束配置] lambda_scale={} / lambda_normal={} / lambda_size={} / normal_start_iter={}（0 = 对应项关闭）".format(
+        dataset.lambda_scale, dataset.lambda_normal, dataset.lambda_size, dataset.normal_start_iter))
 
     bg_color = [1, 1, 1] if dataset.white_background else [0, 0, 0]
     background = torch.tensor(bg_color, dtype=torch.float32, device="cuda")
@@ -206,18 +206,25 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
             Ll1depth = 0
 
         # 阶段2新功能：法向一致性 loss（渲染法向 vs 深度导出法向，不依赖外部 GT）
+        # 对齐 2DGS 原版延迟启用（iteration > normal_start_iter，默认 7000）：
+        # 前期深度图不可靠、深度导出法向是噪声，过早启用会向旋转注入噪声梯度；
         # 仅在 --lambda_normal > 0 时计算；mask 区域外（alpha_mask == 0）像素不参与
         loss_normal_v = 0.0
-        if dataset.lambda_normal > 0.0:
+        if dataset.lambda_normal > 0.0 and iteration > dataset.normal_start_iter:
             n_rendered = render_pkg["normal"][:, 1:-1, 1:-1]              # 3, H-2, W-2
-            n_depth = normal_from_invdepth(render_pkg["depth"], viewpoint_cam)  # 3, H-2, W-2
+            # 深度靶标用 median depth（对齐 2DGS，比 alpha 加权期望逆深度锐利得多）；
+            # detach：median 深度选取不可微，与 2DGS 一致仅作靶标不回传梯度
+            n_depth = normal_from_meddepth(render_pkg["med_depth"].detach(), viewpoint_cam)  # 3, H-2, W-2
             cos = torch.sum(n_rendered * n_depth, dim=0) / (
                 torch.norm(n_rendered, dim=0) * torch.norm(n_depth, dim=0) + 1e-6)
-            valid_n = render_pkg["depth"][0, 1:-1, 1:-1] > 1e-4
+            valid_n = render_pkg["med_depth"][0, 1:-1, 1:-1] > 1e-4
+            # 弱像素过滤：合成法向模长过小（累计不透明度低/近背景）的像素 cos 是纯噪声
+            valid_n = valid_n & (torch.norm(n_rendered, dim=0) > 0.5)
             if viewpoint_cam.alpha_mask is not None:
                 valid_n = valid_n & (alpha_mask[0, 1:-1, 1:-1] > 0.5)
             if int(valid_n.sum()) > 0:
-                loss_normal = (1.0 - torch.abs(cos[valid_n])).mean()
+                # 对齐 2DGS：1 - cos（两侧法向均已朝向相机，无需绝对值容忍符号二义）
+                loss_normal = (1.0 - cos[valid_n]).mean()
                 loss += dataset.lambda_normal * loss_normal
                 loss_normal_v = loss_normal.item()
 
@@ -311,16 +318,17 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                 print("\n[ITER {}] Saving Checkpoint".format(iteration))
                 torch.save((gaussians.capture(), iteration), scene.model_path + "/chkpnt" + str(iteration) + ".pth")
 
-def normal_from_invdepth(invdepth, viewpoint_camera):
-    """阶段2新功能：由渲染的逆深度图导出法向量图（参考 2DGS，不依赖外部 GT）。
-    逆深度 → 深度 → 相机系反投影 3D 点 → 中心差分叉积得面法向（内部像素 H-2 x W-2），
+def normal_from_meddepth(med_depth, viewpoint_camera):
+    """阶段2新功能（对齐 2DGS）：由渲染的 median depth 图导出法向量图（不依赖外部 GT）。
+    median depth（累计 alpha 首次越过 0.5 处的高斯深度，比 alpha 加权期望逆深度锐利）
+    → 相机系反投影 3D 点 → 中心差分叉积得面法向（内部像素 H-2 x W-2），
     与光栅化器输出的法向一样朝向相机（叉积方向取 dPdy x dPdx），归一化后返回 3 x (H-2) x (W-2)"""
     W = int(viewpoint_camera.image_width)
     H = int(viewpoint_camera.image_height)
     fx = W / (2.0 * math.tan(viewpoint_camera.FoVx * 0.5))
     fy = H / (2.0 * math.tan(viewpoint_camera.FoVy * 0.5))
     cx, cy = (W - 1) / 2.0, (H - 1) / 2.0
-    depth = 1.0 / invdepth[0].clamp(min=1e-6)  # H, W
+    depth = med_depth[0]  # H, W（0 = 无贡献像素）
     dev = depth.device
     y, x = torch.meshgrid(torch.arange(H, device=dev, dtype=torch.float32),
                           torch.arange(W, device=dev, dtype=torch.float32), indexing="ij")

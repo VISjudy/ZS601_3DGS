@@ -77,6 +77,11 @@ RasterizeGaussiansCUDA(
   torch::Tensor out_normal = torch::full({3, H, W}, 0.0, float_opts).contiguous();
   float* out_normalptr = out_normal.data<float>();
 
+  // Stage-2 (2DGS-style): median depth output (depth at first accumulated-alpha 0.5 crossing;
+  // sharper than alpha-weighted expected invdepth; not differentiated, used as normal target only)
+  torch::Tensor out_med_depth = torch::full({1, H, W}, 0.0, float_opts).contiguous();
+  float* out_med_depthptr = out_med_depth.data<float>();
+
   torch::Tensor radii = torch::full({P}, 0, means3D.options().dtype(torch::kInt32));
   
   torch::Device device(torch::kCUDA);
@@ -121,11 +126,12 @@ RasterizeGaussiansCUDA(
 		out_color.contiguous().data<float>(),
 		out_invdepthptr,
 		out_normalptr,
+		out_med_depthptr,
 		antialiasing,
 		radii.contiguous().data<int>(),
 		debug);
   }
-  return std::make_tuple(rendered, out_color, radii, geomBuffer, binningBuffer, imgBuffer, out_invdepth, out_normal);
+  return std::make_tuple(rendered, out_color, radii, geomBuffer, binningBuffer, imgBuffer, out_invdepth, out_normal, out_med_depth);
 }
 
 std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>

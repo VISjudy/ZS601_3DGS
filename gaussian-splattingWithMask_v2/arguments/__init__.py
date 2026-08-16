@@ -73,9 +73,12 @@ class ModelParams(ParamGroup):
         # 阶段2新功能：法向量约束 loss 权重（参考 2DGS）：
         # --lambda_scale：z 轴厚度正则 |exp(scaling)[:,2]| 均值的权重；
         # --lambda_normal：渲染法向与深度导出法向一致性 loss 的权重；两者为 0 时对应项跳过。
+        # --normal_start_iter：法向 loss 延迟启用轮次（对齐 2DGS 原版：前期深度不可靠，
+        # 深度导出法向是噪声，过早启用会扰乱旋转优化；冒烟验证时可传 0 强制启用）。
         # 注意：若重跑 A/B 组 baseline 需显式传 --lambda_scale 0 --lambda_normal 0
         self.lambda_scale = 0.1
-        self.lambda_normal = 0.2
+        self.lambda_normal = 0.1
+        self.normal_start_iter = 7000
         # 阶段2新增：形状约束（防大椭球）——逐高斯惩罚最长尺度轴 exp 后均值的权重；
         # 默认 0 关闭（不显式开启时不影响既有 A/B/C/D 组口径）；建议从 0.01 起调
         self.lambda_size = 0.0

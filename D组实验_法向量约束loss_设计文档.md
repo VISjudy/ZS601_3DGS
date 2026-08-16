@@ -23,8 +23,8 @@ D 组只修改 loss，参考 2DGS 增加两项：
 1. **scale 正则**（压薄 z 轴厚度）：
    `loss_scale = mean(|exp(scaling)[:, 2:3]|)`，权重 `--lambda_scale`（默认 0.1，可调）
 2. **深度-法向一致性**：渲染法向图 vs 深度导出法向图，
-   `loss_normal = mean(1 - |cos(n_rendered, n_depth)|)`，权重 `--lambda_normal`（默认 0.2，可调）；
-   不依赖外部 GT 法向量图。
+   `loss_normal = mean(1 - cos(n_rendered, n_depth))`，权重 `--lambda_normal`（默认 0.1，可调）；
+   对齐 2DGS 原版延迟启用：`--normal_start_iter`（默认 7000）轮后才开启；不依赖外部 GT 法向量图。
 3. **形状约束（可选，防大椭球）**：逐高斯惩罚最长尺度轴（exp 后真实尺度）的均值，
    `loss_size = mean(max(exp(scaling), dim=1))`，权重 `--lambda_size`（默认 0 关闭）。
 
@@ -124,12 +124,13 @@ D 组只修改 loss，参考 2DGS 增加两项：
 
 ## 第二部分 2-B：法向量 loss 融入训练（train_mask.py + gaussian_model.py + arguments）
 
-### 2.1 arguments/__init__.py（ModelParams，L77-81）
+### 2.1 arguments/__init__.py（ModelParams，L77-85）
 
 - 新增 `self.lambda_scale = 0.1`：z 轴厚度正则权重；
-- 新增 `self.lambda_normal = 0.2`：深度-法向一致性 loss 权重；
+- 新增 `self.lambda_normal = 0.1`：深度-法向一致性 loss 权重；
+- 新增 `self.normal_start_iter = 7000`：法向 loss 延迟启用轮次（对齐 2DGS：前期深度不可靠，过早启用向旋转注入噪声梯度）；
 - 新增 `self.lambda_size = 0.0`：形状约束（防大椭球）权重，默认关闭；
-- 前三者为 0 时对应项跳过；注释注明重跑 A/B 组需显式传 0。
+- 为 0 时对应项跳过；注释注明重跑 A/B 组需显式传 0。
 
 ### 2.2 scene/gaussian_model.py
 
@@ -138,25 +139,32 @@ D 组只修改 loss，参考 2DGS 增加两项：
 
 ### 2.3 train_mask.py
 
-**深度导出法向 `normal_from_invdepth`（L305-327，参考 2DGS，无外部 GT）**
+**深度导出法向 `normal_from_meddepth`（对齐 2DGS，无外部 GT）**
 
-1. 逆深度 → 深度：`depth = 1 / invdepth[0].clamp(min=1e-6)`；
+深度靶标为光栅化器新输出的 **median depth**（`med_depth` 通道：逐像素累计 alpha 首次越过 0.5 时贡献高斯的深度，
+比 alpha 加权期望逆深度锐利得多；背景/无贡献像素为 0；反向不传梯度，仅作靶标）：
+
+1. 深度 = `med_depth[0]`（已是深度单位，无需取倒数）；
 2. 由 FoV 推内参：`fx = W / (2 tan(FoVx/2))`、`fy = H / (2 tan(FoVy/2))`、`cx=(W-1)/2`、`cy=(H-1)/2`；
 3. 相机系反投影：`P = ((x-cx)/fx * d, (y-cy)/fy * d, d)`；
 4. 中心差分 `dPdx = (P[:, 2:] - P[:, :-2]) / 2`、`dPdy = (P[2:, :] - P[:-2, :]) / 2`（内部像素 H-2 × W-2）；
 5. `n = cross(dPdy, dPdx)`（叉积顺序保证朝向相机，与光栅化器口径一致）→ normalize，返回 `3 x (H-2) x (W-2)`。
 
-**法向一致性 loss（L208-222，仅 `lambda_normal > 0`）**
+**法向一致性 loss（仅 `lambda_normal > 0` 且 `iteration > normal_start_iter`，默认 7000）**
 
 ```python
 n_rendered = render_pkg["normal"][:, 1:-1, 1:-1]          # 裁边对齐，3 x (H-2) x (W-2)
-n_depth = normal_from_invdepth(render_pkg["depth"], viewpoint_cam)
+n_depth = normal_from_meddepth(render_pkg["med_depth"].detach(), viewpoint_cam)  # detach：median 选取不可微
 cos = sum(n_rendered * n_depth, dim=0) / (|n_rendered| * |n_depth| + 1e-6)
-valid = (depth > 1e-4) & (alpha_mask > 0.5)               # mask 区域外像素不参与
-loss_normal = mean(1 - |cos[valid]|)                      # 2DGS 原版口径（绝对值容忍朝向二义）
+valid = (med_depth > 1e-4) & (|n_rendered| > 0.5) & (alpha_mask > 0.5)  # 无效/弱/mask 外像素剔除
+loss_normal = mean(1 - cos[valid])                        # 对齐 2DGS：不加绝对值（两侧法向均已朝向相机）
 loss += lambda_normal * loss_normal
 ```
 
+- **延迟启用（对齐 2DGS 原版，重要）**：训练前期深度不可靠、深度导出法向是噪声，过早启用会向旋转注入噪声梯度
+  （实测：第 0 轮启用 λ=0.2 时 normal_loss 停滞在随机水平 ~0.42，5000 轮法向图呈彩虹噪点、渲染质量被抑制）；
+  2DGS 官方为 7000 轮（COLMAP 稀疏初始化）；本项目激光点云初始化几何已准，正式训练建议传 1000、冒烟传 0；
+- **弱像素过滤**：合成法向模长 < 0.5（累计不透明度低/近背景）的像素 cos 是纯噪声，剔除；
 - 有效像素为 0 时整项跳过，避免空张量 mean 出 NaN；
 - mask 语义遵循项目约定（加载时已取反，1 = 有效保留区域）。
 
@@ -223,8 +231,8 @@ loss += lambda_size * loss_size
 - [x] 翻转条件为 `dot > 0 才翻转`（朝向相机），与设计目标一致；
 - [x] 法向反向梯度只进 rotations（atomicAdd 叠加，不覆盖协方差梯度），不进 scales；
 - [x] `dL_dout_normal` 为空张量时反向零开销（指针判空跳过）；
-- [x] normal loss 剔除 mask 外像素（`alpha_mask > 0.5`）与无效深度（`> 1e-4`）；
-- [x] 权重为 0 时各 loss 项完全不计算、不打印（含 `lambda_size`）；
+- [x] normal loss 剔除 mask 外像素（`alpha_mask > 0.5`）、无效深度（`> 1e-4`）与弱像素（法向模长 ≤ 0.5）；
+- [x] 法向 loss 延迟启用（`normal_start_iter` 默认 7000，对齐 2DGS），权重为 0 时完全不计算、不打印（含 `lambda_size`）；
 - [x] 法向图背景为 0（不混 bg_color），normal 通道不 clamp。
 
 ## 相关文件索引

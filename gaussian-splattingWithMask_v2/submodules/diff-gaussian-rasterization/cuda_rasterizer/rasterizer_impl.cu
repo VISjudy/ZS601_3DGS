@@ -220,6 +220,8 @@ int CudaRasterizer::Rasterizer::forward(
 	float* out_color,
 	float* depth,
 	float* out_normal,
+	// Stage-2 (2DGS-style): median depth output (1*H*W)
+	float* med_depth,
 	bool antialiasing,
 	int* radii,
 	bool debug)
@@ -341,7 +343,8 @@ int CudaRasterizer::Rasterizer::forward(
 		geomState.depths,
 		depth,
 		geomState.normals,
-		out_normal), debug)
+		out_normal,
+		med_depth), debug)
 
 	return num_rendered;
 }

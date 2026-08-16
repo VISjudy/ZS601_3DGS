@@ -82,16 +82,17 @@ class _RasterizeGaussians(torch.autograd.Function):
 
         # Invoke C++/CUDA rasterizer
         # 阶段2新功能：返回值新增 normal（alpha 加权合成的法向量图，3*H*W）
-        num_rendered, color, radii, geomBuffer, binningBuffer, imgBuffer, invdepths, normal = _C.rasterize_gaussians(*args)
+        # 与 med_depth（2DGS 式 median depth：累计 alpha 首次越过 0.5 处的高斯深度，1*H*W）
+        num_rendered, color, radii, geomBuffer, binningBuffer, imgBuffer, invdepths, normal, med_depth = _C.rasterize_gaussians(*args)
 
         # Keep relevant tensors for backward
         ctx.raster_settings = raster_settings
         ctx.num_rendered = num_rendered
         ctx.save_for_backward(colors_precomp, means3D, scales, rotations, cov3Ds_precomp, radii, sh, opacities, geomBuffer, binningBuffer, imgBuffer)
-        return color, radii, invdepths, normal
+        return color, radii, invdepths, normal, med_depth
 
     @staticmethod
-    def backward(ctx, grad_out_color, _, grad_out_depth, grad_out_normal):
+    def backward(ctx, grad_out_color, _, grad_out_depth, grad_out_normal, grad_out_med_depth):
 
         # Restore necessary values from context
         num_rendered = ctx.num_rendered

@@ -312,7 +312,9 @@ renderCUDA(
 	float* __restrict__ invdepth,
 	// Stage-2: per-Gaussian normals (input) and alpha-composited normal map (output)
 	const float* __restrict__ normals,
-	float* __restrict__ out_normal)
+	float* __restrict__ out_normal,
+	// Stage-2 (2DGS-style): median depth output (depth of first Gaussian where accumulated alpha exceeds 0.5)
+	float* __restrict__ med_depth)
 {
 	// Identify current tile and associated min/max pixel range.
 	auto block = cg::this_thread_block();
@@ -347,6 +349,8 @@ renderCUDA(
 	float expected_invdepth = 0.0f;
 	// Stage-2: pixel-level normal accumulation (same alpha weighting as invdepth)
 	float expected_normal[3] = { 0.0f, 0.0f, 0.0f };
+	// Stage-2 (2DGS-style): median depth = depth at the first accumulated-alpha 0.5 crossing
+	bool median_set = false;
 
 	// Iterate over batches until all done or range is complete
 	for (int i = 0; i < rounds; i++, toDo -= BLOCK_SIZE)
@@ -394,6 +398,14 @@ renderCUDA(
 			{
 				done = true;
 				continue;
+			}
+
+			// Stage-2 (2DGS-style): record median depth once accumulated alpha (1 - test_T)
+			// crosses 0.5; sharper and more surface-consistent than alpha-weighted expected depth
+			if (med_depth && !median_set && test_T <= 0.5f)
+			{
+				med_depth[pix_id] = depths[collected_id[j]];
+				median_set = true;
 			}
 
 			// Eq. (3) from 3D Gaussian splatting paper.
@@ -461,7 +473,8 @@ void render(
 	float* depths,
 	float* depth,
 	const float* normals,
-	float* out_normal)
+	float* out_normal,
+	float* med_depth)
 {
 	renderCUDA<NUM_CHANNELS> << <grid, block >> > (
 		ranges,
@@ -477,7 +490,8 @@ void render(
 		depths, 
 		depth,
 		normals,
-		out_normal);
+		out_normal,
+		med_depth);
 }
 
 void preprocess(int P, int D, int M,

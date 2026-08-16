@@ -52,6 +52,8 @@ namespace CudaRasterizer
 			float* depth,
 			// Stage-2: alpha-composited normal map output (3*H*W)
 			float* out_normal,
+			// Stage-2 (2DGS-style): median depth output (1*H*W)
+			float* med_depth,
 			bool antialiasing,
 			int* radii = nullptr,
 			bool debug = false);

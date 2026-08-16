@@ -95,8 +95,9 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
 
     # Rasterize visible Gaussians to image, obtain their radii (on screen). 
     # 阶段2新功能：光栅化器额外返回 normal（alpha 加权合成法向量图，3*H*W，背景 0）
+    # 与 med_depth（2DGS 式 median depth：累计 alpha 首次越过 0.5 处的高斯深度，比期望逆深度更锐利）
     if separate_sh:
-        rendered_image, radii, depth_image, normal_image = rasterizer(
+        rendered_image, radii, depth_image, normal_image, med_depth_image = rasterizer(
             means3D = means3D,
             means2D = means2D,
             dc = dc,
@@ -107,7 +108,7 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
             rotations = rotations,
             cov3D_precomp = cov3D_precomp)
     else:
-        rendered_image, radii, depth_image, normal_image = rasterizer(
+        rendered_image, radii, depth_image, normal_image, med_depth_image = rasterizer(
             means3D = means3D,
             means2D = means2D,
             shs = shs,
@@ -132,7 +133,9 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
         "radii": radii,
         "depth" : depth_image,
         # 阶段2新功能：图像级法向量图（不 clamp，分量理论范围 [-1,1]，供法向 loss/可视化使用）
-        "normal" : normal_image
+        "normal" : normal_image,
+        # 阶段2新功能（对齐 2DGS）：median depth（法向 loss 的深度靶标，比期望逆深度锐利）
+        "med_depth" : med_depth_image
         }
     
     return out

@@ -68,7 +68,9 @@ namespace FORWARD
 		// Stage-2: per-Gaussian camera-facing normals (input, 3*P) for normal-map compositing
 		const float* normals,
 		// Stage-2: alpha-composited normal map output (3*H*W)
-		float* out_normal);
+		float* out_normal,
+		// Stage-2 (2DGS-style): median depth output (1*H*W, depth at first accumulated-alpha 0.5 crossing)
+		float* med_depth);
 }
 
 
