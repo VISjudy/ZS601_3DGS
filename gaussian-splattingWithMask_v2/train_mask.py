@@ -86,16 +86,16 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                                           masks_folder=val_masks_dir, depths_folder="", test_cam_names_list=[])
         val_cameras = cameraList_from_camInfos(val_cam_infos, 1.0, dataset, False, True)
         print("[val_file] 已加载 {} 个 val 相机：{}".format(len(val_cameras), val_file))
-    # D2：loss 记录到 loss_log.csv；阶段2新增 normal_loss/scale_reg/size_reg/flat_reg/smooth_reg 五列
+    # D2：loss 记录到 loss_log.csv；阶段2新增 normal_loss/scale_reg/size_reg/flat_reg/smooth_reg/anchor_reg 六列
     loss_log_path = os.path.join(scene.model_path, "loss_log.csv")
     if not os.path.exists(loss_log_path):
         with open(loss_log_path, "w") as f:
-            f.write("iteration,L1,SSIM_loss,depth_loss,normal_loss,scale_reg,size_reg,flat_reg,smooth_reg,total\n")
+            f.write("iteration,L1,SSIM_loss,depth_loss,normal_loss,scale_reg,size_reg,flat_reg,smooth_reg,anchor_reg,total\n")
 
     # 阶段2新功能：打印法向约束 loss 配置，确认实验变量生效
-    print("[法向约束配置] lambda_scale={} / lambda_normal={} / lambda_size={} / normal_start_iter={} / lambda_flat={} / lambda_smooth={}（0 = 对应项关闭）".format(
+    print("[法向约束配置] lambda_scale={} / lambda_normal={} / lambda_size={} / normal_start_iter={} / lambda_flat={} / lambda_smooth={} / lambda_anchor={}(anchor_iter={})（0 = 对应项关闭）".format(
         dataset.lambda_scale, dataset.lambda_normal, dataset.lambda_size, dataset.normal_start_iter,
-        dataset.lambda_flat, dataset.lambda_smooth))
+        dataset.lambda_flat, dataset.lambda_smooth, dataset.lambda_anchor, dataset.anchor_iter))
 
     bg_color = [1, 1, 1] if dataset.white_background else [0, 0, 0]
     background = torch.tensor(bg_color, dtype=torch.float32, device="cuda")
@@ -116,6 +116,9 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
     smooth_nbrs = None
     smooth_last_build = -10 ** 9
     smooth_last_count = -1
+    # 阶段2新增：锚点法向图缓存（anchor_iter 轮采集，按 image_name 索引，固定 GT 靶标）
+    anchor_normals = {}
+    anchor_warned = False
 
     progress_bar = tqdm(range(first_iter, opt.iterations), desc="Training progress")
     first_iter += 1
@@ -142,6 +145,30 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
         # Every 1000 its we increase the levels of SH up to a maximum degree
         if iteration % 1000 == 0:
             gaussians.oneupSHdegree()
+
+        # 阶段2新增：锚点法向采集——仅在 anchor_iter 轮执行一次，此时模型尚未更新，
+        # 采集到的就是初始化（激光点云法向对齐）状态的法向图；降 1/4 分辨率 float16 存 CPU控内存
+        if dataset.lambda_anchor > 0.0 and len(anchor_normals) == 0:
+            if iteration == dataset.anchor_iter:
+                print("[anchor] iter {} 采集全部训练视图的锚点法向图（1/4 分辨率 float16）...".format(iteration))
+                t_anchor = time.time()
+                train_cams = scene.getTrainCameras()
+                with torch.no_grad():
+                    for ci, cam in enumerate(train_cams):
+                        pkg = render(cam, gaussians, pipe, background, separate_sh=SPARSE_ADAM_AVAILABLE)
+                        nmap = pkg["normal"].detach().cpu()
+                        nmap = torch.nn.functional.interpolate(nmap[None], scale_factor=0.25, mode="bilinear", align_corners=False)[0]
+                        valid = nmap.norm(dim=0) > 0.5
+                        anchor_normals[cam.image_name] = (nmap.half(), valid)
+                        if (ci + 1) % 500 == 0:
+                            print("[anchor]   已采集 {}/{}".format(ci + 1, len(train_cams)))
+                torch.cuda.empty_cache()
+                mem_gb = sum(n.numel() * 2 + v.numel() for n, v in anchor_normals.values()) / 1e9
+                print("[anchor] 采集完成：{} 个视图，耗时 {:.1f}s，占用约 {:.2f}GB 内存".format(
+                    len(anchor_normals), time.time() - t_anchor, mem_gb))
+            elif iteration > dataset.anchor_iter and not anchor_warned:
+                print("[anchor] 警告：已过 anchor_iter={} 且锚点缓存为空（可能断点续训），锚点 loss 不启用".format(dataset.anchor_iter))
+                anchor_warned = True
 
         # Pick a random Camera
         if not viewpoint_stack:
@@ -280,17 +307,40 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
             loss += dataset.lambda_smooth * loss_smooth
             loss_smooth_v = loss_smooth.item()
 
-        # D2：每 10 轮追加记录 {iteration, L1, SSIM loss, depth loss, normal loss, scale reg, size reg, flat reg, smooth reg, total}
+        # 阶段2新增：锚点法向 loss——把当前渲染法向（对旋转可导）拉向 anchor_iter 轮固定的
+        # 锚点法向图（激光初始法向），打断深度-法向一致性两侧靶标皆自生成的自增强回路
+        loss_anchor_v = 0.0
+        if dataset.lambda_anchor > 0.0 and len(anchor_normals) > 0:
+            pair = anchor_normals.get(viewpoint_cam.image_name)
+            if pair is not None:
+                anc_n, anc_valid = pair
+                anc_n = anc_n.float().cuda()
+                anc_valid = anc_valid.cuda()
+                n_cur = torch.nn.functional.interpolate(
+                    render_pkg["normal"][None], size=anc_n.shape[-2:], mode="bilinear", align_corners=False)[0]
+                cos_a = (n_cur * anc_n).sum(dim=0) / (
+                    torch.norm(n_cur, dim=0) * torch.norm(anc_n, dim=0) + 1e-6)
+                valid_a = anc_valid & (torch.norm(n_cur, dim=0) > 0.5)
+                if viewpoint_cam.alpha_mask is not None:
+                    am_ds = torch.nn.functional.interpolate(
+                        alpha_mask[None].float(), size=anc_n.shape[-2:], mode="nearest")[0]
+                    valid_a = valid_a & (am_ds[0] > 0.5)
+                if int(valid_a.sum()) > 0:
+                    loss_anchor = (1.0 - cos_a[valid_a]).mean()
+                    loss += dataset.lambda_anchor * loss_anchor
+                    loss_anchor_v = loss_anchor.item()
+
+        # D2：每 10 轮追加记录 {iteration, L1, SSIM loss, depth loss, normal loss, scale reg, size reg, flat reg, smooth reg, anchor reg, total}
         if iteration % 10 == 0:
             with open(loss_log_path, "a") as f:
-                f.write("{},{:.6f},{:.6f},{:.6f},{:.6f},{:.6f},{:.6f},{:.6f},{:.6f},{:.6f}\n".format(
+                f.write("{},{:.6f},{:.6f},{:.6f},{:.6f},{:.6f},{:.6f},{:.6f},{:.6f},{:.6f},{:.6f}\n".format(
                     iteration, Ll1.item(), 1.0 - ssim_value.item(), float(Ll1depth),
                     float(loss_normal_v), float(loss_scale_v), float(loss_size_v),
-                    float(loss_flat_v), float(loss_smooth_v), loss.item()))
+                    float(loss_flat_v), float(loss_smooth_v), float(loss_anchor_v), loss.item()))
             # 阶段2新功能：每 10 轮 print 新增的正则项（仅在开启时打印）
-            if dataset.lambda_normal > 0.0 or dataset.lambda_scale > 0.0 or dataset.lambda_size > 0.0 or dataset.lambda_flat > 0.0 or dataset.lambda_smooth > 0.0:
-                print("[loss] iter {}: Normal {:.6f} / Scale {:.6f} / Size {:.6f} / Flat {:.6f} / Smooth {:.6f} / total {:.6f}".format(
-                    iteration, loss_normal_v, loss_scale_v, loss_size_v, loss_flat_v, loss_smooth_v, loss.item()))
+            if dataset.lambda_normal > 0.0 or dataset.lambda_scale > 0.0 or dataset.lambda_size > 0.0 or dataset.lambda_flat > 0.0 or dataset.lambda_smooth > 0.0 or dataset.lambda_anchor > 0.0:
+                print("[loss] iter {}: Normal {:.6f} / Scale {:.6f} / Size {:.6f} / Flat {:.6f} / Smooth {:.6f} / Anchor {:.6f} / total {:.6f}".format(
+                    iteration, loss_normal_v, loss_scale_v, loss_size_v, loss_flat_v, loss_smooth_v, loss_anchor_v, loss.item()))
 
         loss.backward()
 
@@ -315,7 +365,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                 print("\n[ITER {}] Saving Gaussians".format(iteration))
                 scene.save(iteration)
 
-            # 阶段2新功能：val10 渲染为每 1000 轮（含第 1 轮），输出 RGB + 光栅化器法向图 + median depth 图
+            # 阶段2新功能：val10 渲染为每 1000 轮（含第 1 轮），输出 RGB + 光栅化器法向图 + median depth 图 + 深度导出法向图
             if val_cameras and iteration % 1000 == 1:
                 render_val_cameras(val_cameras, gaussians, pipe, background, iteration, scene.model_path,
                                    SPARSE_ADAM_AVAILABLE, dataset.train_test_exp, elapsed_sec=time.time() - train_start_time)
@@ -393,8 +443,12 @@ def plot_loss_curves(loss_log_path, model_path, iteration):
         data = data[None]
     it = data[:, 0]
     fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-    # 兼容旧版 5 列、阶段2 7/8 列与含 flat/smooth 的 10 列 csv
-    if data.shape[1] >= 10:
+    # 兼容旧版 5 列、阶段2 7/8/10 列与含 anchor 的 11 列 csv
+    if data.shape[1] >= 11:
+        cols = [(1, "L1"), (2, "SSIM loss"), (3, "depth loss"), (4, "normal loss"),
+                (5, "scale reg"), (6, "size reg"), (7, "flat reg"), (8, "smooth reg"),
+                (9, "anchor reg"), (10, "total")]
+    elif data.shape[1] >= 10:
         cols = [(1, "L1"), (2, "SSIM loss"), (3, "depth loss"), (4, "normal loss"),
                 (5, "scale reg"), (6, "size reg"), (7, "flat reg"), (8, "smooth reg"), (9, "total")]
     elif data.shape[1] >= 8:
@@ -419,7 +473,8 @@ def plot_loss_curves(loss_log_path, model_path, iteration):
 
 def render_val_cameras(val_cameras, gaussians, pipe, background, iteration, model_path, separate_sh, train_test_exp, elapsed_sec=0.0):
     """新功能：渲染全部 val 相机，输出当前轮次的 RGB 渲染图、法向量方向图（阶段2升级为
-    直接使用光栅化器 normal 通道，与训练 loss 同口径）与 median depth 图（turbo 着色）；GT 图只在第一轮保存；
+    直接使用光栅化器 normal 通道，与训练 loss 同口径）、median depth 图（turbo 着色）
+    与深度导出法向图（normal_from_meddepth，供对照）；GT 图只在第一轮保存；
     同时计算 val 集 L1/PSNR/SSIM 并追加到 val_metrics.csv"""
     out_dir = os.path.join(model_path, "val_render", "iter_{}".format(iteration))
     os.makedirs(out_dir, exist_ok=True)
@@ -469,6 +524,14 @@ def render_val_cameras(val_cameras, gaussians, pipe, background, iteration, mode
             darr = (darr * 255).byte()
         darr[~valid_d.cpu()] = 0
         Image.fromarray(darr.contiguous().cpu().numpy()).save(os.path.join(out_dir, "val{}_depth.png".format(idx)))
+
+        # 阶段2新功能：输出深度导出法向图（与法向 loss 靶标同公式 normal_from_meddepth），
+        # 供与光栅化器法向图对照，定位“渲染法向漂移”问题
+        dn = normal_from_meddepth(render_pkg["med_depth"].detach(), cam)  # 3, H-2, W-2
+        dn = torch.nn.functional.pad(dn, (1, 1, 1, 1), mode="replicate")
+        dnimg = (torch.clamp(dn, -1.0, 1.0) + 1.0) * 0.5
+        dnarr = (dnimg * 255).byte().permute(1, 2, 0).contiguous().cpu().numpy()
+        Image.fromarray(dnarr).save(os.path.join(out_dir, "val{}_depth_normal.png".format(idx)))
 
     # val 指标记录到 val_metrics.csv，便于追踪训练过程中的变化；
     # 新增：当前高斯点云数量与训练耗时（秒），方便观察致密化与速度

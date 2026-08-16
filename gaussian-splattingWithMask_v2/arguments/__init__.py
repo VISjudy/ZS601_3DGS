@@ -94,6 +94,11 @@ class ModelParams(ParamGroup):
         self.lambda_smooth = 0.0
         self.smooth_knn_k = 8
         self.smooth_every = 500
+        # 阶段2新增：锚点法向 loss——把 anchor_iter 轮（默认 1，即初始化状态）的每视图渲染法向图
+        # 固定为 GT 靶标，约束当前渲染法向向其靠拢（mean(1-cos)）。用于打断
+        # “深度-法向一致性两侧靶标皆自生成”的自增强恶化回路；激光点云初始法向可信，建议 0.2 起调
+        self.lambda_anchor = 0.0
+        self.anchor_iter = 1
         super().__init__(parser, "Loading Parameters", sentinel)
 
     def extract(self, args):
