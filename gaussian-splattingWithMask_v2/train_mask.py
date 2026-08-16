@@ -279,7 +279,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                 print("\n[ITER {}] Saving Gaussians".format(iteration))
                 scene.save(iteration)
 
-            # 阶段2新功能：val10 渲染为每 1000 轮（含第 1 轮），输出 RGB + 光栅化器法向图
+            # 阶段2新功能：val10 渲染为每 1000 轮（含第 1 轮），输出 RGB + 光栅化器法向图 + median depth 图
             if val_cameras and iteration % 1000 == 1:
                 render_val_cameras(val_cameras, gaussians, pipe, background, iteration, scene.model_path,
                                    SPARSE_ADAM_AVAILABLE, dataset.train_test_exp, elapsed_sec=time.time() - train_start_time)
@@ -379,8 +379,8 @@ def plot_loss_curves(loss_log_path, model_path, iteration):
     print("\n[ITER {}] 损失曲线图已保存：{}".format(iteration, out_path))
 
 def render_val_cameras(val_cameras, gaussians, pipe, background, iteration, model_path, separate_sh, train_test_exp, elapsed_sec=0.0):
-    """新功能：渲染全部 val 相机，输出当前轮次的 RGB 渲染图与法向量方向颜色贴图（阶段2升级为
-    直接使用光栅化器 normal 通道，与训练 loss 同口径）；GT 图只在第一轮保存；
+    """新功能：渲染全部 val 相机，输出当前轮次的 RGB 渲染图、法向量方向图（阶段2升级为
+    直接使用光栅化器 normal 通道，与训练 loss 同口径）与 median depth 图（turbo 着色）；GT 图只在第一轮保存；
     同时计算 val 集 L1/PSNR/SSIM 并追加到 val_metrics.csv"""
     out_dir = os.path.join(model_path, "val_render", "iter_{}".format(iteration))
     os.makedirs(out_dir, exist_ok=True)
@@ -408,11 +408,28 @@ def render_val_cameras(val_cameras, gaussians, pipe, background, iteration, mode
             Image.fromarray(gt_arr).save(os.path.join(out_dir, "val{}_gt.png".format(idx)))
 
         # 阶段2新功能：直接用光栅化器 normal 通道（已朝向相机）生成方向颜色贴图 RGB=(n+1)/2，
-        # 无需额外渲染一次，与 normal loss 输入同口径，可与阶段0点云法向投影图对照
+        # 无需额外渲染一次，与 normal loss 输入同口径，可与阶段 0 点云法向投影图对照
         nmap = torch.clamp(render_pkg["normal"], -1.0, 1.0)
         nimg = (nmap + 1.0) * 0.5
         narr = (nimg * 255).byte().permute(1, 2, 0).contiguous().cpu().numpy()
         Image.fromarray(narr).save(os.path.join(out_dir, "val{}_normal.png".format(idx)))
+        
+        # 阶段2新功能：保存 median depth 图（法向 loss 的深度靶标，比期望逆深度锐利）；
+        # 有效像素按全图 min~max 归一化后 turbo 着色，无贡献像素为黑；matplotlib 缺失时回退灰度
+        dmap = render_pkg["med_depth"][0]                        # H, W（0 = 无贡献）
+        valid_d = dmap > 0
+        dnorm = torch.zeros_like(dmap)
+        if bool(valid_d.any()):
+            vmin, vmax = float(dmap[valid_d].min()), float(dmap[valid_d].max())
+            dnorm[valid_d] = (dmap[valid_d] - vmin) / max(vmax - vmin, 1e-6)
+        try:
+            import matplotlib.cm as cm
+            darr = (torch.from_numpy(cm.turbo(dnorm.cpu().numpy())[..., :3].copy()) * 255).byte()
+        except ImportError:
+            darr = torch.stack([dnorm] * 3, dim=-1)
+            darr = (darr * 255).byte()
+        darr[~valid_d.cpu()] = 0
+        Image.fromarray(darr.contiguous().cpu().numpy()).save(os.path.join(out_dir, "val{}_depth.png".format(idx)))
 
     # val 指标记录到 val_metrics.csv，便于追踪训练过程中的变化；
     # 新增：当前高斯点云数量与训练耗时（秒），方便观察致密化与速度

@@ -195,7 +195,7 @@ loss += lambda_size * loss_size
 | 每 10 轮 print | `[loss] iter {}: Normal Loss ... / Scale Reg ... / Size Reg ... / total ...`（仅有权重开启时打印） |
 | 启动确认 | `[法向约束配置] lambda_scale=... / lambda_normal=... / lambda_size=...`，确认实验变量生效 |
 | 曲线图 | `plot_loss_curves` 兼容 5/7/8 列 csv（按列数自适应） |
-| val 可视化 | `render_val_cameras` 直接用光栅化器 normal 通道输出方向颜色贴图 `RGB=(n+1)/2`（L390-395），与训练 loss 同口径、无需额外渲染一次 |
+| val 可视化 | `render_val_cameras`（每 1000 轮，含第 1 轮）直接用光栅化器 normal 通道输出方向颜色贴图 `RGB=(n+1)/2`（与训练 loss 同口径），另存 median depth 图（turbo 着色，无贡献像素为黑），均无需额外渲染一次 |
 
 ---
 
