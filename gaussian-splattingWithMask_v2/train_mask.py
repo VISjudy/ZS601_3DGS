@@ -86,15 +86,16 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                                           masks_folder=val_masks_dir, depths_folder="", test_cam_names_list=[])
         val_cameras = cameraList_from_camInfos(val_cam_infos, 1.0, dataset, False, True)
         print("[val_file] 已加载 {} 个 val 相机：{}".format(len(val_cameras), val_file))
-    # D2：loss 记录到 loss_log.csv；阶段2新增 normal_loss/scale_reg/size_reg 三列
+    # D2：loss 记录到 loss_log.csv；阶段2新增 normal_loss/scale_reg/size_reg/flat_reg/smooth_reg 五列
     loss_log_path = os.path.join(scene.model_path, "loss_log.csv")
     if not os.path.exists(loss_log_path):
         with open(loss_log_path, "w") as f:
-            f.write("iteration,L1,SSIM_loss,depth_loss,normal_loss,scale_reg,size_reg,total\n")
+            f.write("iteration,L1,SSIM_loss,depth_loss,normal_loss,scale_reg,size_reg,flat_reg,smooth_reg,total\n")
 
     # 阶段2新功能：打印法向约束 loss 配置，确认实验变量生效
-    print("[法向约束配置] lambda_scale={} / lambda_normal={} / lambda_size={} / normal_start_iter={}（0 = 对应项关闭）".format(
-        dataset.lambda_scale, dataset.lambda_normal, dataset.lambda_size, dataset.normal_start_iter))
+    print("[法向约束配置] lambda_scale={} / lambda_normal={} / lambda_size={} / normal_start_iter={} / lambda_flat={} / lambda_smooth={}（0 = 对应项关闭）".format(
+        dataset.lambda_scale, dataset.lambda_normal, dataset.lambda_size, dataset.normal_start_iter,
+        dataset.lambda_flat, dataset.lambda_smooth))
 
     bg_color = [1, 1, 1] if dataset.white_background else [0, 0, 0]
     background = torch.tensor(bg_color, dtype=torch.float32, device="cuda")
@@ -111,6 +112,10 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
     ema_Ll1depth_for_log = 0.0
     dead_view_skips = 0  # 新功能：无有效像素（mask 取反后全 0）视图跳过计数
     train_start_time = time.time()  # 新功能：记录训练总耗时（val 指标 csv 使用）
+    # 阶段2新增：kNN 邻居法向趋同正则的邻居图缓存（点数变化/超过重建间隔时重建）
+    smooth_nbrs = None
+    smooth_last_build = -10 ** 9
+    smooth_last_count = -1
 
     progress_bar = tqdm(range(first_iter, opt.iterations), desc="Training progress")
     first_iter += 1
@@ -245,16 +250,47 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
             loss += dataset.lambda_size * loss_size
             loss_size_v = loss_size.item()
 
-        # D2：每 10 轮追加记录 {iteration, L1, SSIM loss, depth loss, normal loss, scale reg, size reg, total}
+        # 阶段2新功能（高斯级形态正则）：每高斯最薄轴尺度均值正则——强制每个高斯
+        # 至少有一个轴是薄的（表面化扁盘）；不依赖轴序号，旋转漂移后依然有效；
+        # 仅在 --lambda_flat > 0 时计算（默认 0 关闭）
+        loss_flat_v = 0.0
+        if dataset.lambda_flat > 0.0:
+            loss_flat = gaussians.get_scaling.min(dim=1, keepdim=True)[0].mean()
+            loss += dataset.lambda_flat * loss_flat
+            loss_flat_v = loss_flat.item()
+
+        # 阶段2新功能（高斯级形态正则）：kNN 邻居法向趋同——同一表面相邻高斯的
+        # 法向应趋同，惩罚 mean(1 - |dot|)（绝对值容忍薄片两侧法向反向的符号二义）；
+        # 邻居图用 scipy cKDTree 在 CPU 上构建，点数变化（致密化）或超过 smooth_every
+        # 轮时重建；仅在 --lambda_smooth > 0 时计算（默认 0 关闭）
+        loss_smooth_v = 0.0
+        if dataset.lambda_smooth > 0.0:
+            n_g = gaussians.get_xyz.shape[0]
+            if smooth_nbrs is None or n_g != smooth_last_count or iteration - smooth_last_build >= dataset.smooth_every:
+                from scipy.spatial import cKDTree
+                xyz_np = gaussians.get_xyz.detach().cpu().numpy()
+                k_knn = min(dataset.smooth_knn_k, n_g - 1)
+                _, nbr_idx = cKDTree(xyz_np).query(xyz_np, k=k_knn + 1)
+                smooth_nbrs = torch.from_numpy(nbr_idx[:, 1:].astype("int64")).cuda()
+                smooth_last_build = iteration
+                smooth_last_count = n_g
+            n_all = gaussians.get_normal  # P,3（相机无关的几何法向，未做朝向翻转）
+            dot_nb = (n_all.unsqueeze(1) * n_all[smooth_nbrs]).sum(dim=-1)  # P,k
+            loss_smooth = (1.0 - dot_nb.abs()).mean()
+            loss += dataset.lambda_smooth * loss_smooth
+            loss_smooth_v = loss_smooth.item()
+
+        # D2：每 10 轮追加记录 {iteration, L1, SSIM loss, depth loss, normal loss, scale reg, size reg, flat reg, smooth reg, total}
         if iteration % 10 == 0:
             with open(loss_log_path, "a") as f:
-                f.write("{},{:.6f},{:.6f},{:.6f},{:.6f},{:.6f},{:.6f},{:.6f}\n".format(
+                f.write("{},{:.6f},{:.6f},{:.6f},{:.6f},{:.6f},{:.6f},{:.6f},{:.6f},{:.6f}\n".format(
                     iteration, Ll1.item(), 1.0 - ssim_value.item(), float(Ll1depth),
-                    float(loss_normal_v), float(loss_scale_v), float(loss_size_v), loss.item()))
-            # 阶段2新功能：每 10 轮 print 新增的 Normal Loss / Scale Reg / Size Reg 项（仅在开启时打印）
-            if dataset.lambda_normal > 0.0 or dataset.lambda_scale > 0.0 or dataset.lambda_size > 0.0:
-                print("[loss] iter {}: Normal Loss {:.6f} / Scale Reg {:.6f} / Size Reg {:.6f} / total {:.6f}".format(
-                    iteration, loss_normal_v, loss_scale_v, loss_size_v, loss.item()))
+                    float(loss_normal_v), float(loss_scale_v), float(loss_size_v),
+                    float(loss_flat_v), float(loss_smooth_v), loss.item()))
+            # 阶段2新功能：每 10 轮 print 新增的正则项（仅在开启时打印）
+            if dataset.lambda_normal > 0.0 or dataset.lambda_scale > 0.0 or dataset.lambda_size > 0.0 or dataset.lambda_flat > 0.0 or dataset.lambda_smooth > 0.0:
+                print("[loss] iter {}: Normal {:.6f} / Scale {:.6f} / Size {:.6f} / Flat {:.6f} / Smooth {:.6f} / total {:.6f}".format(
+                    iteration, loss_normal_v, loss_scale_v, loss_size_v, loss_flat_v, loss_smooth_v, loss.item()))
 
         loss.backward()
 
@@ -357,8 +393,11 @@ def plot_loss_curves(loss_log_path, model_path, iteration):
         data = data[None]
     it = data[:, 0]
     fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-    # 兼容旧版 5 列、阶段2 7 列与含 size_reg 的 8 列 csv
-    if data.shape[1] >= 8:
+    # 兼容旧版 5 列、阶段2 7/8 列与含 flat/smooth 的 10 列 csv
+    if data.shape[1] >= 10:
+        cols = [(1, "L1"), (2, "SSIM loss"), (3, "depth loss"), (4, "normal loss"),
+                (5, "scale reg"), (6, "size reg"), (7, "flat reg"), (8, "smooth reg"), (9, "total")]
+    elif data.shape[1] >= 8:
         cols = [(1, "L1"), (2, "SSIM loss"), (3, "depth loss"), (4, "normal loss"),
                 (5, "scale reg"), (6, "size reg"), (7, "total")]
     elif data.shape[1] >= 7:

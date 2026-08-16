@@ -82,6 +82,15 @@ class ModelParams(ParamGroup):
         # 阶段2新增：形状约束（防大椭球）——逐高斯惩罚最长尺度轴 exp 后均值的权重；
         # 默认 0 关闭（不显式开启时不影响既有 A/B/C/D 组口径）；建议从 0.01 起调
         self.lambda_size = 0.0
+        # 阶段2新增（高斯级形态正则，目标：小扁盘贴表面 + 邻居法向趋同）：
+        # --lambda_flat：每高斯最薄轴尺度均值正则（强制每个高斯至少有一个轴薄，
+        # 不依赖轴序号，比只压第 3 轴的 lambda_scale 更鲁棒）；建议 0.05 起调
+        # --lambda_smooth：kNN 邻居法向趋同正则（同一表面相邻高斯法向趋同，mean(1-|dot|)）；建议 0.05 起调
+        # --smooth_knn_k / --smooth_every：邻居数 / 邻居图重建间隔（致密化后自动重建）
+        self.lambda_flat = 0.0
+        self.lambda_smooth = 0.0
+        self.smooth_knn_k = 8
+        self.smooth_every = 500
         super().__init__(parser, "Loading Parameters", sentinel)
 
     def extract(self, args):
