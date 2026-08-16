@@ -43,7 +43,7 @@ namespace FORWARD
 		float* cov3Ds,
 		float* colors,
 		float4* conic_opacity,
-		// 阶段2新功能：每个高斯的朝向相机法向量（3*P）
+		// Stage-2: per-Gaussian camera-facing normal vectors (3*P)
 		float* normals,
 		const dim3 grid,
 		uint32_t* tiles_touched,
@@ -65,7 +65,7 @@ namespace FORWARD
 		float* out_color,
 		float* depths,
 		float* depth,
-		// 阶段2新功能：alpha 加权合成的法向量图（3*H*W）
+		// Stage-2: alpha-composited normal map output (3*H*W)
 		float* out_normal);
 }
 

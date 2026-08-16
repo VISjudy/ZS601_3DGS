@@ -30,7 +30,7 @@ namespace BACKWARD
 		const float4* conic_opacity,
 		const float* colors,
 		const float* depths,
-		// 阶段2新功能：每高斯法向、法向图像素梯度、每高斯法向梯度输出
+		// Stage-2: per-Gaussian normals, normal-map pixel gradients, per-Gaussian normal gradient output
 		const float* normals,
 		const float* final_Ts,
 		const uint32_t* n_contrib,
@@ -63,7 +63,7 @@ namespace BACKWARD
 		const float3* dL_dmean2D,
 		const float* dL_dconics,
 		const float* dL_dinvdepth,
-		// 阶段2新功能：每高斯法向、法向图像素梯度、每高斯法向梯度输出
+		// Stage-2: per-Gaussian normals, normal-map pixel gradients, per-Gaussian normal gradient output
 		const float* normals,
 		const float* dL_dout_normals,
 		float* dL_dopacity,

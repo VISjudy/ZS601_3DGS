@@ -414,7 +414,7 @@ __global__ void preprocessCUDA(
 	float* dL_dsh,
 	glm::vec3* dL_dscale,
 	glm::vec4* dL_drot,
-	// 阶段2新功能：每高斯法向梯度（3*P，由反向 render 累计）
+	// Stage-2: per-Gaussian normal gradients (3*P, accumulated by backward render)
 	const float* dL_dnormals,
 	float* dL_dopacity)
 {
@@ -449,10 +449,10 @@ __global__ void preprocessCUDA(
 	if (scales)
 		computeCov3D(idx, scales[idx], scale_modifier, rotations[idx], dL_dcov3D, dL_dscale, dL_drot);
 
-	// 阶段2新功能：法向图梯度回传到四元数。n = R(q)*[0,0,1] 即 R 的第 3 列，与 scale 无关。
-	// 前向的朝向相机翻转记号 s 在前后向中同时作用于存储值与梯度（s*s=1），相消后
-	// 直接用 geom 缓冲中存储的（已翻转）法向值推导梯度即可。
-	// 设 r=q.x, x=q.y, y=q.z, z=q.w，n=(2(xz+ry), 2(yz-rx), 1-2(x²+y²))，解析求导：
+	// Stage-2: propagate normal-map gradients to the quaternion. n = R(q)*[0,0,1] (3rd column of R), independent of scale.
+	// The camera-facing flip sign s applies to both stored value and gradient (s*s=1), so it cancels out;
+	// gradients can be derived directly from the (already flipped) normals stored in the geom buffer.
+	// Let r=q.x, x=q.y, y=q.z, z=q.w, n=(2(xz+ry), 2(yz-rx), 1-2(x^2+y^2)); analytic derivatives:
 	if (dL_dnormals)
 	{
 		const float dL_nx = dL_dnormals[idx * 3 + 0];
@@ -465,7 +465,7 @@ __global__ void preprocessCUDA(
 			const float x = q.y;
 			const float y = q.z;
 			const float z = q.w;
-			// dn/dr = (2y, -2x, 0)；dn/dx = (2z, 0, -4x)；dn/dy = (0, 2z, -4y)；dn/dz = (2x, 2y, 0)
+			// dn/dr = (2y, -2x, 0); dn/dx = (2z, 0, -4x); dn/dy = (0, 2z, -4y); dn/dz = (2x, 2y, 0)
 			float4* dL_drot_n = (float4*)(dL_drot + idx);
 			atomicAdd(&dL_drot_n->x, 2.f * (y * dL_nx - x * dL_ny));
 			atomicAdd(&dL_drot_n->y, 2.f * z * dL_nx - 4.f * x * dL_nz);
@@ -487,7 +487,7 @@ renderCUDA(
 	const float4* __restrict__ conic_opacity,
 	const float* __restrict__ colors,
 	const float* __restrict__ depths,
-	// 阶段2新功能：每高斯法向（前向 geom 缓冲）与法向图像素梯度
+	// Stage-2: per-Gaussian normals (forward geom buffer) and normal-map pixel gradients
 	const float* __restrict__ normals,
 	const float* __restrict__ final_Ts,
 	const uint32_t* __restrict__ n_contrib,
@@ -541,7 +541,7 @@ renderCUDA(
 	float dL_dpixel[C];
 	float dL_invdepth;
 	float accum_invdepth_rec = 0;
-	// 阶段2新功能：法向通道像素梯度与后向累计（与 invdepth 同构）
+	// Stage-2: normal-channel pixel gradients and backward accumulation (mirrors invdepth)
 	float dL_dnormal_pix[3];
 	float accum_normal_rec[3] = { 0, 0, 0 };
 	if (inside)
@@ -646,8 +646,8 @@ renderCUDA(
 			atomicAdd(&(dL_dinvdepths[global_id]), dchannel_dcolor * dL_invdepth);
 			}
 
-			// 阶段2新功能：法向通道梯度——更新 alpha 梯度并累计到每高斯法向
-			// （翻转记号在前后向中一致，正负号相消，直接用存储值即可）
+			// Stage-2: normal-channel gradients: update alpha gradient and accumulate per-Gaussian normal gradients
+			// (the flip sign is consistent between forward and backward and cancels out; use stored values directly)
 			if (dL_dnormals)
 			{
 				for (int ch = 0; ch < 3; ch++)
@@ -713,7 +713,7 @@ void BACKWARD::preprocess(
 	const float3* dL_dmean2D,
 	const float* dL_dconic,
 	const float* dL_dinvdepth,
-	// 阶段2新功能：每高斯法向（前向 geom 缓冲）与法向图像素梯度
+	// Stage-2: per-Gaussian normals (forward geom buffer) and normal-map pixel gradients
 	const float* normals,
 	const float* dL_dout_normals,
 	float* dL_dopacity,

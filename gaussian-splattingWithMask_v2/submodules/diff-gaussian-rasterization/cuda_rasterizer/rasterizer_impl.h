@@ -37,7 +37,7 @@ namespace CudaRasterizer
 		float* cov3D;
 		float4* conic_opacity;
 		float* rgb;
-		// 阶段2新功能：每高斯朝向相机的法向量（3*P）
+		// Stage-2: per-Gaussian camera-facing normal vectors (3*P)
 		float* normals;
 		uint32_t* point_offsets;
 		uint32_t* tiles_touched;

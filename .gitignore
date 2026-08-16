@@ -29,6 +29,7 @@ val_metrics.csv
 # ===== IDE / 临时文件 =====
 .qoder/
 .qoder-cn/
+_v1_git_backup/
 _mask_*.png
 ZS601_3DGS_stagesTEST.ipynb
 ZS601_3DGS_stagestest1.ipynb

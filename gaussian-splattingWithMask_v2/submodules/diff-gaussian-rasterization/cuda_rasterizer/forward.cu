@@ -266,8 +266,8 @@ __global__ void preprocessCUDA(int P, int D, int M,
 	conic_opacity[idx] = { conic.x, conic.y, conic.z, opacity * h_convolution_scaling };
 
 
-	// 阶段2新功能：计算每个高斯的法向量（旋转矩阵第 3 列，即最小尺度轴方向），
-	// 若与（高斯中心 - 相机中心）点积为正（背向相机）则翻转，保证法向始终朝向相机
+	// Stage-2: per-Gaussian normal = 3rd column of the rotation matrix (smallest-scale axis);
+	// flip when dot(normal, gaussian_center - camera_center) > 0 so it always faces the camera
 	{
 		glm::vec4 q = rotations[idx];
 		float r = q.x;
@@ -310,7 +310,7 @@ renderCUDA(
 	float* __restrict__ out_color,
 	const float* __restrict__ depths,
 	float* __restrict__ invdepth,
-	// 阶段2新功能：每高斯法向（输入）与 alpha 加权合成法向图（输出）
+	// Stage-2: per-Gaussian normals (input) and alpha-composited normal map (output)
 	const float* __restrict__ normals,
 	float* __restrict__ out_normal)
 {
@@ -345,7 +345,7 @@ renderCUDA(
 	float C[CHANNELS] = { 0 };
 
 	float expected_invdepth = 0.0f;
-	// 阶段2新功能：像素级法向量累计（与 invdepth 相同的 alpha 加权方式）
+	// Stage-2: pixel-level normal accumulation (same alpha weighting as invdepth)
 	float expected_normal[3] = { 0.0f, 0.0f, 0.0f };
 
 	// Iterate over batches until all done or range is complete
@@ -403,7 +403,7 @@ renderCUDA(
 			if(invdepth)
 			expected_invdepth += (1 / depths[collected_id[j]]) * alpha * T;
 
-			// 阶段2新功能：法向量与 depth 同样按 alpha*T 加权累计
+			// Stage-2: accumulate normals weighted by alpha*T, same as depth
 			if (out_normal)
 			{
 				expected_normal[0] += normals[collected_id[j] * 3 + 0] * alpha * T;
@@ -431,7 +431,7 @@ renderCUDA(
 		if (invdepth)
 		invdepth[pix_id] = expected_invdepth;// 1. / (expected_depth + T * 1e3);
 
-		// 阶段2新功能：写出法向量图（背景为 0，不加 bg_color）
+		// Stage-2: write normal map (background stays 0, bg_color not added)
 		if (out_normal)
 		{
 			out_normal[0 * H * W + pix_id] = expected_normal[0];
@@ -441,7 +441,12 @@ renderCUDA(
 	}
 }
 
-void FORWARD::render(
+// Stage-2 note: wrapper definitions are placed inside the namespace block
+// (instead of using FORWARD:: qualified names outside) for compile robustness.
+namespace FORWARD
+{
+
+void render(
 	const dim3 grid, dim3 block,
 	const uint2* ranges,
 	const uint32_t* point_list,
@@ -475,7 +480,7 @@ void FORWARD::render(
 		out_normal);
 }
 
-void FORWARD::preprocess(int P, int D, int M,
+void preprocess(int P, int D, int M,
 	const float* means3D,
 	const glm::vec3* scales,
 	const float scale_modifier,
@@ -533,3 +538,5 @@ void FORWARD::preprocess(int P, int D, int M,
 		antialiasing
 		);
 }
+
+} // namespace FORWARD

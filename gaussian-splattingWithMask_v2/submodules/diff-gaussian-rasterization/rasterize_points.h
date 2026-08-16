@@ -55,7 +55,7 @@ std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Te
 	const float tan_fovy,
     const torch::Tensor& dL_dout_color,
 	const torch::Tensor& dL_dout_invdepth,
-	// 阶段2新功能：法向图像素梯度（0 元素张量表示不参与反向）
+	// Stage-2: normal-map pixel gradients (0-element tensor means not joined in backward)
 	const torch::Tensor& dL_dout_normal,
 	const torch::Tensor& sh,
 	const int degree,

@@ -73,7 +73,7 @@ RasterizeGaussiansCUDA(
   out_invdepth = torch::full({1, H, W}, 0.0, float_opts).contiguous();
   out_invdepthptr = out_invdepth.data<float>();
 
-  // 阶段2新功能：法向量图输出（3 通道，背景 0）
+  // Stage-2: normal map output (3 channels, background 0)
   torch::Tensor out_normal = torch::full({3, H, W}, 0.0, float_opts).contiguous();
   float* out_normalptr = out_normal.data<float>();
 
@@ -176,7 +176,7 @@ std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Te
   torch::Tensor dL_dscales = torch::zeros({P, 3}, means3D.options());
   torch::Tensor dL_drotations = torch::zeros({P, 4}, means3D.options());
   torch::Tensor dL_dinvdepths = torch::zeros({0, 1}, means3D.options());
-  // 阶段2新功能：每高斯法向梯度（仅当法向图参与 loss 时分配）
+  // Stage-2: per-Gaussian normal gradients (allocated only when the normal map joins the loss)
   torch::Tensor dL_dnormals = torch::zeros({0, 3}, means3D.options());
   
   float* dL_dinvdepthsptr = nullptr;

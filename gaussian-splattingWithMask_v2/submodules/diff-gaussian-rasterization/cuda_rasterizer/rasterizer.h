@@ -50,7 +50,7 @@ namespace CudaRasterizer
 			const bool prefiltered,
 			float* out_color,
 			float* depth,
-			// 阶段2新功能：alpha 加权合成法向量图输出（3*H*W）
+			// Stage-2: alpha-composited normal map output (3*H*W)
 			float* out_normal,
 			bool antialiasing,
 			int* radii = nullptr,
@@ -78,7 +78,7 @@ namespace CudaRasterizer
 			char* image_buffer,
 			const float* dL_dpix,
 			const float* dL_invdepths,
-			// 阶段2新功能：法向图像素梯度（0 元素张量时传 nullptr，跳过法向反向）
+			// Stage-2: normal-map pixel gradients (nullptr for 0-element tensors, skips normal backward)
 			const float* dL_dout_normals,
 			float* dL_dmean2D,
 			float* dL_dconic,
@@ -90,7 +90,7 @@ namespace CudaRasterizer
 			float* dL_dsh,
 			float* dL_dscale,
 			float* dL_drot,
-			// 阶段2新功能：每高斯法向梯度输出（3*P）
+			// Stage-2: per-Gaussian normal gradient output (3*P)
 			float* dL_dnormals,
 			bool antialiasing,
 			bool debug);
