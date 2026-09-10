@@ -91,3 +91,7 @@ CPU测试覆盖旋转、几何梯度、开关、相机定向和剪枝引用。Co
 恢复运行仍使用新目录，CSV只包含续跑段；不要将恢复段当作从第一步开始的完整日志。
 
 完整流程 notebook：`colab/ZS601_AB_v3_complete.ipynb`；代码固定提交，A/B各30000步，输入先复制到`/content`。
+
+## 云端存储策略
+
+默认 `--val_npz off`：验证仅保存 PNG 和 CSV，不生成 geometry.npz。`--checkpoint_interval 50000`：正式训练在50000、100000、150000步保存checkpoint及PLY，最终步总会保存（包括200步冒烟）。初始PLY和reference_v3.npz用于初始化记录，仍保留。已有产物不删除。运行中的旧进程不会自动加载新版源码，需单独完成可验证的切换。
