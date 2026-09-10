@@ -80,3 +80,14 @@ python -m unittest -v test_geometry_v3
 ```
 
 CPU测试覆盖旋转、几何梯度、开关、相机定向和剪枝引用。Colab notebook 包含环境检查、主基线扩展构建、测试、200步冒烟和正式A/B入口。CPU测试通过不代表CUDA扩展编译、完整训练和恢复已经在Colab验证；请先运行冒烟单元。安装使用Colab自带torch，并记录实际版本，不盲目安装旧environment.yml。
+# 正式 A/B 输出补充（2026-09-10）
+
+`--val_ellipsoids on|off` 独立控制每次固定验证输出的 `valXX_ellipsoid.png`，默认开启。
+显示固定1σ、真实三轴尺度的实体椭球，DC颜色加方向光，opacity过滤阈值0.05。
+这是诊断可视化，不改变训练或模型参数；需要CuPy CUDA，避免Colab EGL落到CPU软件渲染。
+
+`loss_log.csv` 每步记录RGB L1/DSSIM、总损失、五项几何loss的raw/weight/weighted、点数和累计耗时，每个log_interval刷新。
+`val_metrics.csv` 每个验证时刻包含十个相机及MEAN行，记录有效像素PSNR/MAE；`ssim_zero_mask_full_image`是置零mask后的整图SSIM。
+恢复运行仍使用新目录，CSV只包含续跑段；不要将恢复段当作从第一步开始的完整日志。
+
+完整流程 notebook：`colab/ZS601_AB_v3_complete.ipynb`；代码固定提交，A/B各30000步，输入先复制到`/content`。
