@@ -19,7 +19,8 @@ def main(argv=None):
     print('[RUN]',json.dumps({'experiment':a.experiment,'features':{n:getattr(a,n) for n in FEATURES},
           'overrides':a.overrides,'growth':'OFF (v3 A/B)','opacity_reset':'OFF','depth_loss':'OFF',
           'hard_thickness_reset':'OFF','seed':a.seed,'val_ellipsoids':a.val_ellipsoids,
-          'ellipsoid_sigma':1,'ellipsoid_color':'SH DC + lighting','loss_csv':'every iteration'},indent=2),flush=True)
+          'ellipsoid_sigma':1,'ellipsoid_color':'SH DC + lighting','loss_csv':'every iteration',
+          'val_npz':a.val_npz,'checkpoint_interval':a.checkpoint_interval},indent=2),flush=True)
     (out/'run_config.json').write_text(json.dumps(vars(a),indent=2),encoding='utf-8')
     from data_v3 import load_data
     from scene.gaussian_model import GaussianModel

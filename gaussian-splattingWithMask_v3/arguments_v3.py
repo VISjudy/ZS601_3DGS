@@ -46,7 +46,9 @@ def parse_args(argv=None):
     p.add_argument('--prune_max_fraction', type=float, default=.01)
     p.add_argument('--log_interval', type=int, default=100)
     p.add_argument('--val_interval', type=int, default=1000)
-    p.add_argument('--checkpoint_interval', type=int, default=1000)
+    p.add_argument('--checkpoint_interval', type=int, default=50000)
+    p.add_argument('--val_npz', choices=['on','off'], default='off',
+                   help='Optional raw validation arrays; PNG and CSV output is unaffected')
     p.add_argument('--depth_visual_max', type=float, default=15.)
     p.add_argument('--val_ellipsoids', choices=['on','off'], default='on',
                    help='Diagnostic opaque 1-sigma DC-color ellipsoids; no training effect')

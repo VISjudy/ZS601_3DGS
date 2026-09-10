@@ -67,9 +67,10 @@ def export_val(a,iteration,cameras,g,pipe):
         # Fixed color scale across all cameras/iterations; zero is black, far is white.
         gray=torch.nan_to_num(depth,nan=0.).clamp(0,a.depth_visual_max)/a.depth_visual_max
         save_rgb(out/(stem+'_depth.png'),gray[None].repeat(3,1,1))
-        np.savez_compressed(out/(stem+'_geometry.npz'),depth_z=depth.cpu().numpy(),
-            normal_camera=normal.cpu().numpy(),alpha=alpha.cpu().numpy(),
-            depth_valid=valid.cpu().numpy(),normal_valid=nvalid.cpu().numpy())
+        if a.val_npz=='on':
+            np.savez_compressed(out/(stem+'_geometry.npz'),depth_z=depth.cpu().numpy(),
+                normal_camera=normal.cpu().numpy(),alpha=alpha.cpu().numpy(),
+                depth_valid=valid.cpu().numpy(),normal_valid=nvalid.cpu().numpy())
         if iteration==0: save_rgb(out/(stem+'_gt_masked.png'),cam.original_image.cuda())
         mask=cam.alpha_mask.cuda() if cam.alpha_mask is not None else torch.ones_like(rgb[:1])
         err=(rgb-cam.original_image.cuda()).square()*mask
@@ -95,4 +96,4 @@ def export_val(a,iteration,cameras,g,pipe):
         'depth':'opacity-normalized expected Gaussian-center camera z; not unbiased surface depth',
         'normal':'camera coordinates, oriented toward this camera, RGB=(normal+1)/2',
         'depth_display_range':[0,a.depth_visual_max],'cameras':manifest},indent=2),encoding='utf-8')
-    print(f'[VAL] iter={iteration} RGB/normal/depth/ellipsoid={a.val_ellipsoids} + raw NPZ: {out}',flush=True)
+    print(f'[VAL] iter={iteration} RGB/normal/depth/ellipsoid={a.val_ellipsoids} raw_npz={a.val_npz}: {out}',flush=True)
