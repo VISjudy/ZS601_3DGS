@@ -48,6 +48,8 @@ def parse_args(argv=None):
     p.add_argument('--val_interval', type=int, default=1000)
     p.add_argument('--checkpoint_interval', type=int, default=1000)
     p.add_argument('--depth_visual_max', type=float, default=15.)
+    p.add_argument('--val_ellipsoids', choices=['on','off'], default='on',
+                   help='Diagnostic opaque 1-sigma DC-color ellipsoids; no training effect')
     p.add_argument('--resume', default='')
     # Remove inherited controls unused by the v3 fixed-population runner.
     removed = {'densification_interval','opacity_reset_interval','densify_from_iter',

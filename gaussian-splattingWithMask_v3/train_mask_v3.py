@@ -1,5 +1,5 @@
 """A/B training derived from the main baseline; all v3 code is additive."""
-import json,random,time
+import csv,json,random,time
 from pathlib import Path
 import numpy as np
 import torch
@@ -18,7 +18,8 @@ def main(argv=None):
     code=provenance()
     print('[RUN]',json.dumps({'experiment':a.experiment,'features':{n:getattr(a,n) for n in FEATURES},
           'overrides':a.overrides,'growth':'OFF (v3 A/B)','opacity_reset':'OFF','depth_loss':'OFF',
-          'hard_thickness_reset':'OFF','seed':a.seed},indent=2),flush=True)
+          'hard_thickness_reset':'OFF','seed':a.seed,'val_ellipsoids':a.val_ellipsoids,
+          'ellipsoid_sigma':1,'ellipsoid_color':'SH DC + lighting','loss_csv':'every iteration'},indent=2),flush=True)
     (out/'run_config.json').write_text(json.dumps(vars(a),indent=2),encoding='utf-8')
     from data_v3 import load_data
     from scene.gaussian_model import GaussianModel
@@ -52,6 +53,11 @@ def main(argv=None):
         export_val(a,0,val_cameras,g,pipe)
     background=torch.zeros(3,device='cuda'); started=time.monotonic()
     iteration=first
+    csv_fields=['iteration','rgb_l1','rgb_dssim','total','count','elapsed']
+    csv_fields += [name+'_'+kind for name in ('surface','tangent','normal','flatten','size')
+                   for kind in ('raw','weight','weighted')]
+    loss_file=(out/'loss_log.csv').open('x',newline='',encoding='utf-8')
+    loss_writer=csv.DictWriter(loss_file,fieldnames=csv_fields); loss_writer.writeheader()
     try:
         for iteration in range(first+1,a.iterations+1):
             g.update_learning_rate(iteration)
@@ -80,10 +86,15 @@ def main(argv=None):
                 check_finite(g)
                 ref,state,event=prune(g,ref,state,a,iteration)
                 if event: append_json(out/'prune_log.jsonl',event); print('[PRUNE]',event,flush=True)
-            if iteration==1 or iteration%a.log_interval==0:
-                record={'iteration':iteration,'rgb_l1':float(rgb_l1.detach()),'rgb_dssim':float(rgb_ssim.detach()),
+            record={'iteration':iteration,'rgb_l1':float(rgb_l1.detach()),'rgb_dssim':float(rgb_ssim.detach()),
                     'total':float(loss.detach()),'losses':terms,'count':len(g.get_xyz),
                     'elapsed':prior_elapsed+time.monotonic()-started}
+            csv_record={k:v for k,v in record.items() if k!='losses'}
+            csv_record.update({name+'_'+kind:terms[name][kind] for name in terms
+                               for kind in ('raw','weight','weighted')})
+            loss_writer.writerow(csv_record)
+            if iteration==1 or iteration%a.log_interval==0:
+                loss_file.flush()
                 append_json(out/'train_log.jsonl',record); print('[TRAIN]',json.dumps(record),flush=True)
             if iteration%a.val_interval==0 or iteration==a.iterations:
                 stat=diagnostics(g.get_xyz,g.get_scaling,g.get_rotation,ref,a)
@@ -97,6 +108,8 @@ def main(argv=None):
         (out/'failure.json').write_text(json.dumps({'iteration':iteration,'error':repr(error),
             'note':'Resume only a completed checkpoint; partial step is not saved as valid.'},indent=2),encoding='utf-8')
         raise
+    finally:
+        loss_file.close()
     (out/'completed.json').write_text(json.dumps({'iteration':iteration,'count':len(g.get_xyz)}),encoding='utf-8')
     print('[DONE]',out,flush=True)
 

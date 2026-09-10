@@ -5,6 +5,7 @@ import numpy as np
 import torch
 from PIL import Image
 from geometry_v3 import normal_axis
+from runtime_v3 import append_csv
 
 def attributes(cam,g,pipe,colors):
     from diff_gaussian_rasterization import GaussianRasterizationSettings,GaussianRasterizer
@@ -49,11 +50,19 @@ def export_val(a,iteration,cameras,g,pipe):
     out=Path(a.model_path)/'val_v3'/f'iteration_{iteration:06d}'
     out.mkdir(parents=True,exist_ok=False)
     manifest=[]; black=torch.zeros(3,device='cuda')
+    ellipsoids=None
+    if a.val_ellipsoids=='on':
+        from ellipsoid_v3 import EllipsoidRenderer
+        ellipsoids=EllipsoidRenderer(g)
     for i,cam in enumerate(cameras):
         stem=f'val{i:02d}'
         rgb=render(cam,g,pipe,black)['render']
         depth,normal,alpha,valid,nvalid=render_geometry(cam,g,pipe)
         save_rgb(out/(stem+'_rgb.png'),rgb)
+        ell_stat=None
+        if ellipsoids is not None:
+            ell_image,ell_stat=ellipsoids.render(cam)
+            ell_image.save(out/(stem+'_ellipsoid.png'))
         save_rgb(out/(stem+'_normal.png'),torch.where(nvalid[None],(normal+1)/2,0.))
         # Fixed color scale across all cameras/iterations; zero is black, far is white.
         gray=torch.nan_to_num(depth,nan=0.).clamp(0,a.depth_visual_max)/a.depth_visual_max
@@ -66,11 +75,24 @@ def export_val(a,iteration,cameras,g,pipe):
         err=(rgb-cam.original_image.cuda()).square()*mask
         # GT is already masked; multiply residual by mask again for excluded pixels.
         mse=float(err.sum()/(3*mask.sum()).clamp_min(1))
+        from utils.loss_utils import ssim
+        mae=float(((rgb-cam.original_image.cuda()).abs()*mask).sum()/(3*mask.sum()).clamp_min(1))
+        zero_mask_ssim=float(ssim(rgb*mask,cam.original_image.cuda()))
+        metrics={'iteration':iteration,'camera_index':i,'image_name':cam.image_name,
+                 'masked_psnr':float(-10*np.log10(max(mse,1e-12))),
+                 'masked_mae':mae,'ssim_zero_mask_full_image':zero_mask_ssim,'count':len(g.get_xyz)}
+        append_csv(Path(a.model_path)/'val_metrics.csv',metrics)
         manifest.append({'index':i,'image_name':cam.image_name,'R':np.asarray(cam.R).tolist(),
             'T':np.asarray(cam.T).tolist(),'valid_depth_fraction':float(valid.float().mean()),
-            'masked_psnr':float(-10*np.log10(max(mse,1e-12)))})
+            'masked_psnr':metrics['masked_psnr'],'masked_mae':mae,
+            'ssim_zero_mask_full_image':zero_mask_ssim,'ellipsoid':ell_stat})
+    append_csv(Path(a.model_path)/'val_metrics.csv',{'iteration':iteration,'camera_index':-1,
+        'image_name':'MEAN','masked_psnr':float(np.mean([m['masked_psnr'] for m in manifest])),
+        'masked_mae':float(np.mean([m['masked_mae'] for m in manifest])),
+        'ssim_zero_mask_full_image':float(np.mean([m['ssim_zero_mask_full_image'] for m in manifest])),
+        'count':len(g.get_xyz)})
     (out/'manifest.json').write_text(json.dumps({'iteration':iteration,'units':a.units,
         'depth':'opacity-normalized expected Gaussian-center camera z; not unbiased surface depth',
         'normal':'camera coordinates, oriented toward this camera, RGB=(normal+1)/2',
         'depth_display_range':[0,a.depth_visual_max],'cameras':manifest},indent=2),encoding='utf-8')
-    print(f'[VAL] iter={iteration} RGB/normal/depth + raw NPZ: {out}',flush=True)
+    print(f'[VAL] iter={iteration} RGB/normal/depth/ellipsoid={a.val_ellipsoids} + raw NPZ: {out}',flush=True)

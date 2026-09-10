@@ -4,6 +4,15 @@ from pathlib import Path
 import numpy as np
 import torch
 
+def append_csv(path,record):
+    import csv
+    path=Path(path)
+    exists=path.exists() and path.stat().st_size>0
+    with path.open('a',newline='',encoding='utf-8') as f:
+        writer=csv.DictWriter(f,fieldnames=list(record))
+        if not exists: writer.writeheader()
+        writer.writerow(record)
+
 def append_json(path,value):
     with open(path,'a',encoding='utf-8') as f: f.write(json.dumps(value,ensure_ascii=False)+'\n')
 
