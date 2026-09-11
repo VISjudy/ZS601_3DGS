@@ -23,6 +23,19 @@ This document is maintained inside the clean `2dgs-zs601-mask-init` branch. It r
 - The notebook is designed to check GPU evidence, mount Drive, clone this branch, compile CUDA extensions, stage ZS601 data under `/content`, validate image-mask matching, and run a 200-step mask-aware COLMAP-sparse smoke test.
 - Formal 150k training is intentionally gated behind smoke success.
 
+
+### 2026-09-11: Colab tab deployment attempt
+
+Success:
+- Pushed `colab/ZS601_2DGS_ProPlus_smoke.ipynb` to branch `2dgs-zs601-mask-init`.
+- Opened the notebook URL in a Chrome tab: `https://colab.research.google.com/github/VISjudy/ZS601_3DGS/blob/2dgs-zs601-mask-init/2d-gaussian-splattingWithMask/colab/ZS601_2DGS_ProPlus_smoke.ipynb`.
+
+Failure / current blocker:
+- Browser automation through the available CUA layer failed with `windows sandbox failed: helper_unknown_error: setup refresh had errors`.
+- Colab MCP connection returned true, but only exposed the browser-connection handshake tool and did not expose notebook cell execution tools.
+- Therefore runtime selection, Drive authorization, and cell execution still require user interaction in the opened Colab tab.
+- Do not record smoke success until the notebook prints fresh `nvidia-smi`, builds both CUDA extensions, runs 200 training steps, and saves/read-backs `verification.json`.
+
 ## Failure / risk log
 
 ### Browser and authorization boundary
