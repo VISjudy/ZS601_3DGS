@@ -4,6 +4,7 @@ from pathlib import Path
 import numpy as np
 import torch
 from arguments_v3 import parse_args,FEATURES
+from scale_bounds_v3 import apply_scale_bounds
 from geometry_v3 import build_reference,tensor_reference,normals_to_quaternions,geometry_losses,diagnostics
 from runtime_v3 import (append_json,provenance,fresh_topology,finish_epoch,prune,check_finite,
                         save_checkpoint,restore_checkpoint)
@@ -18,7 +19,7 @@ def main(argv=None):
     code=provenance()
     print('[RUN]',json.dumps({'experiment':a.experiment,'features':{n:getattr(a,n) for n in FEATURES},
           'overrides':a.overrides,'growth':'OFF (v3 A/B)','opacity_reset':'OFF','depth_loss':'OFF',
-          'hard_thickness_reset':'OFF','seed':a.seed,'val_ellipsoids':a.val_ellipsoids,
+          'hard_scale_bounds':a.scale_bounds,'seed':a.seed,'val_ellipsoids':a.val_ellipsoids,
           'ellipsoid_sigma':1,'ellipsoid_color':'SH DC + lighting','loss_csv':'every iteration',
           'val_npz':a.val_npz,'checkpoint_interval':a.checkpoint_interval},indent=2),flush=True)
     (out/'run_config.json').write_text(json.dumps(vars(a),indent=2),encoding='utf-8')
@@ -37,6 +38,10 @@ def main(argv=None):
     with torch.no_grad():
         if a.init_normal: g._rotation.copy_(torch.from_numpy(normals_to_quaternions(ref_np['normal'])).cuda())
         if a.init_flatten: g._scaling[:,2]=a.init_log_thickness
+    if a.scale_bounds and not a.resume:
+        bounds=apply_scale_bounds(g,ref,a)
+        event={'iteration':0,'phase':'initialization',**{k:v.item() for k,v in bounds.items()}}
+        append_json(out/'scale_bounds_log.jsonl',event); print('[SCALE BOUNDS]',event,flush=True)
     g.training_setup(opt)
     state=fresh_topology(g); sampler=[]; first=0; prior_elapsed=0.
     if a.resume:
@@ -83,6 +88,11 @@ def main(argv=None):
             with torch.no_grad():
                 state['epoch_views']+=(pkg['radii']>0).to(torch.int32)
                 g.optimizer.step(); g.optimizer.zero_grad(set_to_none=True)
+                if a.scale_bounds:
+                    bounds=apply_scale_bounds(g,ref,a)
+                    if iteration==1 or iteration%a.log_interval==0:
+                        event={'iteration':iteration,'phase':'post_optimizer',**{k:v.item() for k,v in bounds.items()}}
+                        append_json(out/'scale_bounds_log.jsonl',event); print('[SCALE BOUNDS]',event,flush=True)
                 # Exposure is deliberately disabled for both groups, consistent with baseline default.
                 check_finite(g)
                 ref,state,event=prune(g,ref,state,a,iteration)

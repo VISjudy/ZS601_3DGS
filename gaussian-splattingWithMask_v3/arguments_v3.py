@@ -2,14 +2,14 @@
 import argparse
 
 FEATURES = ('init_normal', 'init_flatten', 'orient_cameras', 'surface_loss',
-            'tangent_loss', 'normal_loss', 'flatten_loss', 'size_loss', 'pruning')
+            'tangent_loss', 'normal_loss', 'flatten_loss', 'size_loss', 'pruning', 'scale_bounds')
 LOSSES = ('surface', 'tangent', 'normal', 'flatten', 'size')
 
 def parse_args(argv=None):
     from arguments import OptimizationParams, PipelineParams
     p = argparse.ArgumentParser(description='LiDAR A/B v3 (fixed population, optional pruning)')
     op, pp = OptimizationParams(p), PipelineParams(p)
-    p.add_argument('--experiment', choices=['A', 'B'], default='A')
+    p.add_argument('--experiment', choices=['A', 'B', 'C'], default='A')
     for name in FEATURES:
         p.add_argument('--'+name, choices=['on', 'off'], default=None)
     p.add_argument('-s', '--source_path', required=True)
@@ -66,7 +66,8 @@ def parse_args(argv=None):
     a = p.parse_args(argv)
     a.overrides = {n:getattr(a,n) for n in FEATURES if getattr(a,n) is not None}
     for n in FEATURES:
-        default = n in ('init_normal','init_flatten','orient_cameras','pruning') or a.experiment=='B'
+        default = (a.experiment=='C' if n=='scale_bounds' else
+                   n in ('init_normal','init_flatten','orient_cameras','pruning') or a.experiment in ('B','C'))
         setattr(a,n, default if getattr(a,n) is None else getattr(a,n)=='on')
     for n in LOSSES:
         if getattr(a,'lambda_'+n)<0 or getattr(a,n+'_start')<0 or getattr(a,n+'_warmup')<0:

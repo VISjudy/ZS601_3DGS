@@ -7,7 +7,7 @@ import numpy as np
 import torch
 from scipy.spatial.transform import Rotation
 from geometry_v3 import normals_to_quaternions,normal_axis,geometry_losses,build_reference
-from arguments_v3 import parse_args,LOSSES
+from arguments_v3 import parse_args,FEATURES,LOSSES
 from runtime_v3 import fresh_topology,finish_epoch,prune
 
 def config(experiment='B',extra=()):
@@ -34,6 +34,18 @@ class GeometryTests(unittest.TestCase):
         self.assertFalse(a.surface_loss)
         self.assertTrue(b.surface_loss)
         self.assertFalse(b.normal_loss); self.assertFalse(b.init_flatten)
+    def test_c_adds_only_scale_bounds_to_b_preset(self):
+        b=config('B'); c=config('C')
+        expected_b={name: name!='scale_bounds' for name in FEATURES}
+        self.assertEqual({name:getattr(b,name) for name in FEATURES},expected_b)
+        self.assertEqual(
+            {name:getattr(c,name) for name in FEATURES if name!='scale_bounds'},
+            {name:getattr(b,name) for name in FEATURES if name!='scale_bounds'})
+        self.assertTrue(c.scale_bounds)
+    def test_c_scale_bounds_single_override_off(self):
+        c=config('C',['--scale_bounds','off'])
+        self.assertFalse(c.scale_bounds)
+        self.assertTrue(all(getattr(c,name) for name in FEATURES if name!='scale_bounds'))
     def loss(self,name,xyz,scales,q=None):
         a=config('A',['--'+name+'_loss','on','--'+name+'_warmup','0'])
         q=torch.tensor([[1.,0.,0.,0.]],requires_grad=True) if q is None else q

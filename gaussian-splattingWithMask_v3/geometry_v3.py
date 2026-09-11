@@ -103,4 +103,8 @@ def diagnostics(xyz,scales,rotation,r,a):
             'thickness':quantiles(scales[:,2]),'max_tangent_scale':quantiles(scales[:,:2].max(1).values),
             'thickness_exceed_fraction':float((scales[:,2]>a.thickness_ratio*h).float().mean()),
             'size_exceed_fraction':float((scales[:,:2].max(1).values>a.size_ratio*h).float().mean()),
+            'size_ratio_to_limit':quantiles(scales[:,:2].max(1).values/(a.size_ratio*h)),
+            'thickness_ratio_to_limit':quantiles(scales[:,2]/(a.thickness_ratio*h)),
+            'size_exceed_fraction_tol':float((scales[:,:2].max(1).values>a.size_ratio*h*(1+1e-6)).float().mean()),
+            'thickness_exceed_fraction_tol':float((scales[:,2]>a.thickness_ratio*h*(1+1e-6)).float().mean()),
             'spacing':quantiles(h)}
