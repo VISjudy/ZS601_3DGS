@@ -47,10 +47,16 @@ def conservative_fill(depth, hit, radius, min_neighbors, edge_absolute, edge_rel
     local_max = F.max_pool2d(torch.where(hit4, depth4, negative_inf),
                              kernel, stride=1, padding=radius)
     neighbors = F.avg_pool2d(hit4.float(), kernel, stride=1, padding=radius) * kernel * kernel
-    valid = torch.isfinite(local_min) & torch.isfinite(local_max) & (neighbors >= min_neighbors)
+    fill_valid = (
+        torch.isfinite(local_min) &
+        torch.isfinite(local_max) &
+        (neighbors >= min_neighbors)
+    )
     spread = local_max - local_min
-    valid &= spread <= edge_absolute + edge_relative * local_min
-    filled = torch.where(valid, local_min, torch.zeros_like(local_min))
+    fill_valid &= spread <= edge_absolute + edge_relative * local_min
+    # Exact z-buffer hits retain their own nearest depth, including isolated hits.
+    valid = hit4 | ((~hit4) & fill_valid)
+    filled = torch.where(hit4, depth4, torch.where(fill_valid, local_min, torch.zeros_like(local_min)))
     return filled[0, 0], valid[0, 0]
 
 
@@ -89,7 +95,7 @@ class LidarDepthProvider:
         self.persistent_index = {}
         self.generated = 0
         self.identity = {
-            'version': 'lidar_camera_z_v2',
+            'version': 'lidar_camera_z_v3',
             'point_cloud': input_identity['point_cloud'],
             'cameras_file': input_identity['cameras_file'],
             'depth_min': args.lidar_depth_min,
@@ -117,7 +123,7 @@ class LidarDepthProvider:
         if not manifest.exists():
             manifest.write_text(json.dumps({
                 'identity': self.identity,
-                'storage': 'temporary local float16 depth plus packed mask',
+                'storage': 'temporary local uint16 PNG using the same encoding as the Drive dataset',
                 'persistent_to_drive': False,
                 'occlusion': 'nearest-depth z-buffer before conservative hole filling',
                 'invalid': 'nonfinite, behind, too near, too far, outside image, or a depth discontinuity',
@@ -184,47 +190,42 @@ class LidarDepthProvider:
             depth, valid = self.memory.pop(key)
             self.memory[key] = (depth, valid)
             return depth, valid
-        path = self.root / (key + '.npz')
+        path = self.root / (key + '_depth_u16.png')
+        generated_now = False
         if path.is_file():
-            with np.load(path) as data:
-                depth = torch.from_numpy(data['depth'].astype(np.float32))
-                shape = tuple(int(x) for x in data['shape'])
-                count = int(np.prod(shape))
-                valid = torch.from_numpy(np.unpackbits(data['valid'])[:count].reshape(shape).astype(bool))
+            encoded = np.asarray(Image.open(path), dtype=np.uint16)
+        elif cam.image_name in self.persistent_index:
+            encoded = np.asarray(
+                Image.open(self.persistent_index[cam.image_name]), dtype=np.uint16
+            )
         else:
-            loaded_persistent = cam.image_name in self.persistent_index
-            if loaded_persistent:
-                stored = np.asarray(
-                    Image.open(self.persistent_index[cam.image_name]), dtype=np.uint16
-                )
-                decoded, decoded_valid = decode_depth_u16(
-                    stored, self.args.lidar_depth_min, self.args.lidar_depth_max
-                )
-                depth = torch.from_numpy(decoded)
-                valid = torch.from_numpy(decoded_valid)
-            else:
-                depth, valid = self._generate(cam)
-                self.generated += 1
-            packed = np.packbits(valid.numpy().reshape(-1))
-            temporary = self.root / (key + '.tmp.npz')
-            np.savez_compressed(temporary,
-                                depth=depth.numpy().astype(np.float16),
-                                valid=packed,
-                                shape=np.asarray(depth.shape, dtype=np.int32))
+            raw_depth, raw_valid = self._generate(cam)
+            encoded = encode_depth_u16(
+                raw_depth.numpy(), raw_valid.numpy(),
+                self.args.lidar_depth_min, self.args.lidar_depth_max,
+            )
+            self.generated += 1
+            generated_now = True
+        depth_np, valid_np = decode_depth_u16(
+            encoded, self.args.lidar_depth_min, self.args.lidar_depth_max
+        )
+        depth = torch.from_numpy(depth_np)
+        valid = torch.from_numpy(valid_np)
+        if not path.is_file():
+            temporary = self.root / (key + '.tmp.png')
+            Image.fromarray(encoded).save(temporary, format='PNG')
             temporary.replace(path)
-            if (not loaded_persistent) and (
-                self.generated <= 5 or self.generated % 100 == 0
-            ):
-                values = depth[valid]
-                print('[LIDAR DEPTH]', json.dumps({
-                    'generated': self.generated,
-                    'camera': cam.image_name,
-                    'valid_pixels': int(valid.sum()),
-                    'coverage': float(valid.float().mean()),
-                    'min': float(values.min()) if values.numel() else None,
-                    'median': float(values.median()) if values.numel() else None,
-                    'max': float(values.max()) if values.numel() else None,
-                }), flush=True)
+        if generated_now and (self.generated <= 5 or self.generated % 100 == 0):
+            values = depth[valid]
+            print('[LIDAR DEPTH]', json.dumps({
+                'generated': self.generated,
+                'camera': cam.image_name,
+                'valid_pixels': int(valid.sum()),
+                'coverage': float(valid.float().mean()),
+                'min': float(values.min()) if values.numel() else None,
+                'median': float(values.median()) if values.numel() else None,
+                'max': float(values.max()) if values.numel() else None,
+            }), flush=True)
         self.memory[key] = (depth, valid)
         while len(self.memory) > self.args.lidar_depth_cache_memory:
             self.memory.popitem(last=False)
