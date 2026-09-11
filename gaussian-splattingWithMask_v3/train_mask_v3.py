@@ -134,7 +134,7 @@ def main(argv=None):
                 save_checkpoint(out/'checkpoints'/f'iteration_{iteration}.pth',g,ref,state,sampler,
                     iteration,a,identity,code,prior_elapsed+time.monotonic()-started)
         if a.final_test=='on' and iteration==150000:
-            final_test_summary,final_test_dir=export_final_test(a,iteration,test_cameras,g,pipe)
+            final_test_summary,final_test_dir=export_final_test(a,iteration,test_cameras,g,pipe,identity)
             write_experiment_summary(a,iteration,final_test_summary,final_test_dir)
         else:
             print(f'[FINAL TEST] skipped: enabled={a.final_test} completed_iteration={iteration}; formal contract requires 150000',flush=True)
