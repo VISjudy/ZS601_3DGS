@@ -13,10 +13,12 @@ from lidar_depth_v3 import (
     decode_depth_u16,
     distance_weights,
     encode_depth_u16,
+    file_sha256,
     pixels_to_camera_np,
     project_camera_np,
     read_depth_png,
     scatter_zbuffer_min,
+    validate_depth_coverage,
     world_to_camera_np,
 )
 
@@ -106,8 +108,23 @@ class LidarDepthTests(unittest.TestCase):
             Image.fromarray(encoded).save(path)
             loaded = read_depth_png(path, (2, 2))
             np.testing.assert_array_equal(loaded, encoded)
+            self.assertEqual(len(file_sha256(path)), 64)
             with self.assertRaises(ValueError):
                 read_depth_png(path, (1, 4))
+
+    def test_coverage_gate_rejects_weak_supervision(self):
+        weak = np.zeros((10, 10), dtype=bool)
+        weak[0, 0] = True
+        with self.assertRaises(ValueError):
+            validate_depth_coverage(
+                weak, min_pixels=2, min_coverage=.001, image_name='weak.png'
+            )
+        valid = np.ones((10, 10), dtype=bool)
+        pixels, coverage = validate_depth_coverage(
+            valid, min_pixels=2, min_coverage=.5, image_name='valid.png'
+        )
+        self.assertEqual(pixels, 100)
+        self.assertEqual(coverage, 1.0)
 
     def test_depth_png_encoding_round_trip(self):
         depth = np.array([[0.0, .1], [7.55, 15.0]], dtype=np.float32)
