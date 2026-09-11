@@ -31,7 +31,7 @@ def select_surface_candidates(xyz,opacity,reference,state,gradient,a):
     plane_distance=((xyz-reference['plane'])*n).sum(-1).abs()
     delta=xyz-reference['anchor']
     tangent=torch.linalg.vector_norm(delta-(delta*n).sum(-1,keepdim=True)*n,dim=-1)
-    views=state['recent_epoch_views']
+    views=torch.maximum(state['recent_epoch_views'],state['epoch_views'])
     seed_ok=state['is_seed']&(state['densify_count']<a.surface_densify_max_children_per_seed)
     return (seed_ok&torch.isfinite(gradient)&(gradient>=a.surface_densify_grad_threshold)&
             (opacity.flatten()>=a.surface_densify_min_opacity)&
