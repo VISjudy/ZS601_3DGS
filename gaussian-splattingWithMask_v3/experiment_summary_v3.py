@@ -86,6 +86,8 @@ def _depth_loss_stats(path):
         'lidar_depth_rendered_fraction',
         'lidar_depth_mean_target_depth',
         'lidar_depth_distance_weight_mean',
+        'lidar_depth_unweighted_raw',
+        'lidar_depth_distance_weighted_raw',
     ]
     sums = {field: 0.0 for field in fields}
     total = 0
@@ -193,8 +195,15 @@ def write_experiment_summary(a, iteration, test_summary, test_dir):
             '编码 0 表示无效，val/test 另有彩色预览。',
             f'- 平均有效覆盖率：{depth_summary["coverage_mean"]:.6f}。',
             f'- 从已保存 PNG 解码并反投影后，逐相机 P95 的最大值为 '
-            f'{back["nearest_lidar_p95_max"]:.6f}；阈值为 '
-            f'{back["required_p95_max"]:.6f}，全部通过。',
+            f'{back["nearest_lidar_p95_max"]:.6f}；'
+            f'Q{int(round(back["checked_quantile"]*100))} 最大值为 '
+            f'{back["nearest_lidar_quantile_max"]:.6f}，阈值为 '
+            f'{back["required_quantile_max"]:.6f}。',
+            f'- 最近邻距离阈值内的逐相机通过率至少为 '
+            f'{back["minimum_observed_pass_fraction"]:.6f}；要求至少 '
+            f'{back["minimum_pass_fraction"]:.6f}。重投影像素误差分位数最大为 '
+            f'{back["reprojection_quantile_px_max"]:.4f}px，阈值为 '
+            f'{back["required_reprojection_quantile_px_max"]:.4f}px。',
             '- 遮挡处理：同一像素保留最小 camera-z；补洞只接受局部深度一致的 '
             'LiDAR 邻域，深度跳变处不补。',
         ]
@@ -209,8 +218,12 @@ def write_experiment_summary(a, iteration, test_summary, test_dir):
         )
         if means:
             lines += [
-                f'- 生效步平均 raw depth loss：{means["lidar_depth_raw"]:.8f}；'
-                f'平均 weighted depth loss：{means["lidar_depth_weighted"]:.8f}。',
+                f'- 生效步平均未加距离权重 Smooth L1：'
+                f'{means["lidar_depth_unweighted_raw"]:.8f}；'
+                f'平均加距离权重后的 raw depth loss：'
+                f'{means["lidar_depth_distance_weighted_raw"]:.8f}；'
+                f'平均乘调度系数后的 depth loss：'
+                f'{means["lidar_depth_weighted"]:.8f}。',
                 f'- 生效步平均监督像素：{means["lidar_depth_valid_pixels"]:.2f}；'
                 f'平均 LiDAR 可渲染比例：'
                 f'{means["lidar_depth_rendered_fraction"]:.6f}。',
