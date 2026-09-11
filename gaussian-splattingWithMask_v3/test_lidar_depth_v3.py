@@ -54,6 +54,18 @@ class LidarDepthTests(unittest.TestCase):
             edge_absolute=.02, edge_relative=.02,
         )
         self.assertFalse(valid_edge[1, 1])
+        self.assertTrue(valid_edge[1, 0])
+        self.assertEqual(edge[1, 0].item(), 2.0)
+
+        isolated = torch.full((3, 3), float('inf'))
+        isolated[1, 1] = 2.5
+        isolated_filled, isolated_valid = conservative_fill(
+            isolated, torch.isfinite(isolated), radius=1, min_neighbors=2,
+            edge_absolute=.02, edge_relative=.02,
+        )
+        self.assertTrue(isolated_valid[1, 1])
+        self.assertEqual(isolated_filled[1, 1].item(), 2.5)
+        self.assertFalse(isolated_valid[0, 0])
 
     def test_camera_transform_round_trip(self):
         angle = .37
