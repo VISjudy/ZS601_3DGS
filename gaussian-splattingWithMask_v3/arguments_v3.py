@@ -8,7 +8,7 @@ LOSSES = ('surface', 'tangent', 'normal', 'flatten', 'size')
 
 def preset_features(experiment):
     enabled={'init_normal','init_flatten','orient_cameras','pruning'}
-    if experiment in ('B','C','D'): enabled.update(LOSSES)
+    if experiment in ('B','C','D'): enabled.update(name+'_loss' for name in LOSSES)
     if experiment in ('C','D'): enabled.add('scale_bounds')
     if experiment=='D': enabled.add('surface_densify')
     return {name:name in enabled for name in FEATURES}

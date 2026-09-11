@@ -36,7 +36,7 @@ class GeometryTests(unittest.TestCase):
         self.assertFalse(b.normal_loss); self.assertFalse(b.init_flatten)
     def test_c_adds_only_scale_bounds_to_b_preset(self):
         b=config('B'); c=config('C')
-        expected_b={name: name!='scale_bounds' for name in FEATURES}
+        expected_b={name: name not in ('scale_bounds','surface_densify') for name in FEATURES}
         self.assertEqual({name:getattr(b,name) for name in FEATURES},expected_b)
         self.assertEqual(
             {name:getattr(c,name) for name in FEATURES if name!='scale_bounds'},
@@ -45,7 +45,20 @@ class GeometryTests(unittest.TestCase):
     def test_c_scale_bounds_single_override_off(self):
         c=config('C',['--scale_bounds','off'])
         self.assertFalse(c.scale_bounds)
-        self.assertTrue(all(getattr(c,name) for name in FEATURES if name!='scale_bounds'))
+        self.assertTrue(all(getattr(c,name) for name in FEATURES if name not in ('scale_bounds','surface_densify')))
+        self.assertFalse(c.surface_densify)
+    def test_d_adds_only_surface_densify_to_c_preset(self):
+        c=config('C'); d=config('D')
+        self.assertEqual(
+            {name:getattr(d,name) for name in FEATURES if name!='surface_densify'},
+            {name:getattr(c,name) for name in FEATURES if name!='surface_densify'})
+        self.assertFalse(c.surface_densify)
+        self.assertTrue(d.surface_densify)
+    def test_d_surface_densify_single_override_off(self):
+        c=config('C'); d=config('D',['--surface_densify','off'])
+        self.assertEqual(
+            {name:getattr(d,name) for name in FEATURES},
+            {name:getattr(c,name) for name in FEATURES})
     def loss(self,name,xyz,scales,q=None):
         a=config('A',['--'+name+'_loss','on','--'+name+'_warmup','0'])
         q=torch.tensor([[1.,0.,0.,0.]],requires_grad=True) if q is None else q
