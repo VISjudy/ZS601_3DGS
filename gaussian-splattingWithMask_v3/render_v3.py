@@ -1,6 +1,6 @@
 """Diagnostic attribute passes using unchanged baseline CUDA. Not depth supervision."""
 from pathlib import Path
-import json, math
+import hashlib, json, math
 import numpy as np
 import torch
 from PIL import Image
@@ -73,6 +73,8 @@ def export_val(a,iteration,cameras,g,pipe):
                 depth_valid=valid.cpu().numpy(),normal_valid=nvalid.cpu().numpy())
         if iteration==0: save_rgb(out/(stem+'_gt_masked.png'),cam.original_image.cuda())
         mask=cam.alpha_mask.cuda() if cam.alpha_mask is not None else torch.ones_like(rgb[:1])
+        if float(mask.sum())<=0:
+            raise ValueError(f'Validation camera has no valid mask pixels: {cam.image_name}')
         err=(rgb-cam.original_image.cuda()).square()*mask
         # GT is already masked; multiply residual by mask again for excluded pixels.
         mse=float(err.sum()/(3*mask.sum()).clamp_min(1))
@@ -103,7 +105,9 @@ def _masked_metrics(cam,rgb):
     from utils.loss_utils import ssim
     gt=cam.original_image.cuda()
     mask=cam.alpha_mask.cuda() if cam.alpha_mask is not None else torch.ones_like(rgb[:1])
-    denom=(3*mask.sum()).clamp_min(1)
+    if float(mask.sum())<=0:
+        raise ValueError(f'Test camera has no valid mask pixels: {cam.image_name}')
+    denom=3*mask.sum()
     residual=rgb-gt
     mse=float((residual.square()*mask).sum()/denom)
     mae=float((residual.abs()*mask).sum()/denom)
@@ -116,8 +120,17 @@ def rank_worst_test(records,count=10):
     """Stable ranking contract: low masked PSNR first, then image name."""
     return sorted(records,key=lambda r:(r['masked_psnr'],r['image_name']))[:min(count,len(records))]
 
+def _comparison_identity(input_identity,cameras):
+    names=[cam.image_name for cam in cameras]
+    protocol='v3 masked-pixel PSNR/MAE plus zero-mask full-image SSIM'
+    payload={'inputs':input_identity,'ordered_test_names':names,'metric_protocol':protocol}
+    digest=hashlib.sha256(json.dumps(payload,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+    return {'sha256':digest,'inputs':input_identity,
+            'ordered_test_names_sha256':hashlib.sha256(('\n'.join(names)).encode()).hexdigest(),
+            'camera_count':len(names),'metric_protocol':protocol}
+
 @torch.no_grad()
-def export_final_test(a,iteration,cameras,g,pipe):
+def export_final_test(a,iteration,cameras,g,pipe,input_identity):
     """Evaluate all test cameras, then save heavy diagnostics only for the worst ten."""
     from gaussian_renderer import render
     if iteration!=150000:
@@ -164,7 +177,9 @@ def export_final_test(a,iteration,cameras,g,pipe):
             'depth':stem+'_depth.png','normal':stem+'_normal.png'},
             'valid_depth_fraction':float(valid.float().mean()),'ellipsoid':ell_stat})
         print(f'[FINAL TEST WORST] rank={rank} camera={row["image_name"]} psnr={row["masked_psnr"]:.4f}',flush=True)
-    summary={'iteration':iteration,'camera_count':len(records),'ranking':'masked_psnr ascending, tie=image_name',
+    summary={'iteration':iteration,'camera_count':len(records),
+        'comparison_identity':_comparison_identity(input_identity,cameras),
+        'ranking':'masked_psnr ascending, tie=image_name',
         'metrics_contract':{
             'masked_psnr':'PSNR from MSE normalized by valid mask pixels and 3 RGB channels',
             'masked_mae':'MAE normalized by valid mask pixels and 3 RGB channels',
