@@ -107,6 +107,18 @@ def distance_weights(depth, power, minimum, maximum):
     return weights.clamp(minimum, maximum)
 
 
+def validate_depth_coverage(valid, min_pixels, min_coverage, image_name):
+    pixels = int(np.asarray(valid, dtype=bool).sum())
+    coverage = float(np.asarray(valid, dtype=bool).mean())
+    if pixels < min_pixels or coverage < min_coverage:
+        raise ValueError(
+            f'LiDAR depth coverage too low for {image_name}: '
+            f'pixels={pixels} coverage={coverage:.8f}, '
+            f'required_pixels={min_pixels} required_coverage={min_coverage}'
+        )
+    return pixels, coverage
+
+
 def encode_depth_u16(depth, valid, depth_min, depth_max):
     depth = np.asarray(depth, dtype=np.float64)
     valid = np.asarray(valid, dtype=bool)
@@ -347,7 +359,16 @@ class LidarDepthProvider:
         rgb[~valid] = 0
         Image.fromarray(np.rint(rgb * 255).astype(np.uint8)).save(path)
 
-    def _reuse_verified_export(self, export):
+    def _camera_layout(self, camera_groups):
+        return {
+            role: [
+                {'image_name': cam.image_name, 'camera_key': self._key(cam)}
+                for cam in cameras
+            ]
+            for role, cameras in camera_groups.items()
+        }
+
+    def _reuse_verified_export(self, export, camera_groups):
         summary_path = export / 'dataset_summary.json'
         verification_path = export / 'verification.json'
         manifest_path = export / 'depth_manifest.csv'
@@ -359,6 +380,14 @@ class LidarDepthProvider:
         verification = json.loads(verification_path.read_text(encoding='utf-8'))
         if summary.get('identity') != self.identity or verification.get('passed') is not True:
             raise ValueError('Existing depth export identity or verification does not match this run')
+        if summary.get('camera_layout') != self._camera_layout(camera_groups):
+            raise ValueError('Existing depth export camera roles/order/poses differ from this run')
+        actual_manifest_hash = file_sha256(manifest_path)
+        if (
+            summary.get('manifest_sha256') != actual_manifest_hash or
+            verification.get('manifest_sha256') != actual_manifest_hash
+        ):
+            raise ValueError('Existing depth manifest hash does not match its verification record')
         index = {}
         with manifest_path.open(newline='', encoding='utf-8') as handle:
             for row in csv.DictReader(handle):
@@ -368,6 +397,10 @@ class LidarDepthProvider:
                     raise FileNotFoundError(f'Invalid persisted depth path for {name}: {candidate}')
                 if name in index:
                     raise ValueError(f'Duplicate image name in persisted depth manifest: {name}')
+                expected_shape = (int(row['height']), int(row['width']))
+                read_depth_png(candidate, expected_shape)
+                if file_sha256(candidate) != row['depth_png_sha256']:
+                    raise ValueError(f'Persisted depth PNG hash mismatch: {candidate}')
                 index[name] = candidate
         if len(index) != summary.get('camera_count'):
             raise ValueError('Persisted depth manifest count differs from dataset summary')
@@ -383,16 +416,23 @@ class LidarDepthProvider:
         from scipy.spatial import cKDTree
 
         export = Path(export_path).expanduser().resolve()
+        if self.args.iterations == 150000 and '/content/drive/' not in export.as_posix().lower():
+            raise ValueError('A formal E depth export must be inside /content/drive/')
         if export.exists():
-            return self._reuse_verified_export(export)
+            return self._reuse_verified_export(export, camera_groups)
         export.mkdir(parents=True)
         tree = cKDTree(self.points_cpu)
         fields = [
-            'role', 'camera_index', 'image_name', 'depth_u16', 'color_preview',
+            'role', 'camera_index', 'image_name', 'camera_key',
+            'width', 'height', 'depth_u16', 'depth_png_sha256', 'color_preview',
             'valid_pixels', 'coverage', 'depth_min', 'depth_median', 'depth_max',
             'depth_quantization_max', 'backproject_samples', 'backproject_mean',
-            'backproject_median', 'backproject_p95', 'backproject_max',
-            'backproject_pass_fraction',
+            'backproject_median', 'backproject_p95', 'backproject_quantile',
+            'backproject_quantile_distance', 'backproject_max',
+            'backproject_pass_fraction', 'backproject_reprojection_quantile_px',
+            'backproject_reprojection_pass_fraction',
+            'backproject_reprojection_tolerance_px',
+            'backproject_source_depth_error_quantile',
         ]
         manifest = export / 'depth_manifest.csv'
         records = []
@@ -409,6 +449,12 @@ class LidarDepthProvider:
                     preview_dir.mkdir()
                 for index, cam in enumerate(cameras):
                     depth, valid = self._get_cpu(cam)
+                    valid_pixels, coverage = validate_depth_coverage(
+                        valid.numpy(),
+                        self.args.lidar_depth_min_pixels,
+                        self.args.lidar_depth_min_coverage,
+                        cam.image_name,
+                    )
                     safe = re.sub(r'[^A-Za-z0-9_.-]+', '_', Path(cam.image_name).stem)
                     stem = f'{index:05d}_{safe}_{self._key(cam)[:10]}'
                     depth_rel = Path(role) / (stem + '_depth_u16.png')
@@ -420,7 +466,12 @@ class LidarDepthProvider:
                     check = self._backproject_validation(
                         cam, decoded_t, decoded_valid_t, tree
                     )
-                    if check['p95'] > self.args.lidar_depth_backproject_tolerance:
+                    if (
+                        check['quantile_distance'] > self.args.lidar_depth_backproject_tolerance or
+                        check['pass_fraction'] < self.args.lidar_depth_backproject_min_fraction or
+                        check['reprojection_quantile_px'] > self.args.lidar_depth_reprojection_tolerance_px or
+                        check['reprojection_pass_fraction'] < self.args.lidar_depth_backproject_min_fraction
+                    ):
                         raise ValueError(
                             f'Backprojection validation failed for {cam.image_name}: {check}'
                         )
@@ -436,10 +487,14 @@ class LidarDepthProvider:
                         'role': role,
                         'camera_index': index,
                         'image_name': cam.image_name,
+                        'camera_key': self._key(cam),
+                        'width': int(cam.image_width),
+                        'height': int(cam.image_height),
                         'depth_u16': str(depth_rel),
+                        'depth_png_sha256': file_sha256(export / depth_rel),
                         'color_preview': str(preview_rel),
-                        'valid_pixels': int(decoded_valid.sum()),
-                        'coverage': float(decoded_valid.mean()),
+                        'valid_pixels': valid_pixels,
+                        'coverage': coverage,
                         'depth_min': float(values.min()),
                         'depth_median': float(np.median(values)),
                         'depth_max': float(values.max()),
@@ -461,6 +516,7 @@ class LidarDepthProvider:
                             f'backproject_p95={row["backproject_p95"]:.5f}',
                             flush=True,
                         )
+        manifest_sha256 = file_sha256(manifest)
         by_role = {}
         for role in camera_groups:
             selected = [record for record in records if record['role'] == role]
@@ -471,6 +527,7 @@ class LidarDepthProvider:
             }
         summary = {
             'identity': self.identity,
+            'camera_layout': self._camera_layout(camera_groups),
             'camera_count': len(records),
             'roles': by_role,
             'depth_encoding': {
@@ -502,11 +559,25 @@ class LidarDepthProvider:
                 'world_formula': '(camera_xyz - T) @ R.T',
                 'source': 'reloaded persisted 16-bit PNG',
                 'nearest_lidar_p95_max': max(r['backproject_p95'] for r in records),
-                'required_p95_max': self.args.lidar_depth_backproject_tolerance,
+                'checked_quantile': self.args.lidar_depth_backproject_quantile,
+                'nearest_lidar_quantile_max': max(
+                    r['backproject_quantile_distance'] for r in records
+                ),
+                'required_quantile_max': self.args.lidar_depth_backproject_tolerance,
+                'minimum_pass_fraction': self.args.lidar_depth_backproject_min_fraction,
+                'minimum_observed_pass_fraction': min(
+                    r['backproject_pass_fraction'] for r in records
+                ),
+                'reprojection_quantile_px_max': max(
+                    r['backproject_reprojection_quantile_px'] for r in records
+                ),
+                'required_reprojection_quantile_px_max':
+                    self.args.lidar_depth_reprojection_tolerance_px,
                 'all_cameras_passed': True,
             },
             'coverage_mean': float(np.mean([r['coverage'] for r in records])),
             'manifest': 'depth_manifest.csv',
+            'manifest_sha256': manifest_sha256,
             'previews': 'val_preview and test_preview; raw train/val/test PNGs are all retained',
         }
         (export / 'dataset_summary.json').write_text(
@@ -518,7 +589,9 @@ class LidarDepthProvider:
             'checked_saved_png_round_trip': True,
             'checked_camera_to_world_backprojection': True,
             'backproject_p95_max': summary['backprojection']['nearest_lidar_p95_max'],
+            'backproject_quantile_max': summary['backprojection']['nearest_lidar_quantile_max'],
             'tolerance': self.args.lidar_depth_backproject_tolerance,
+            'manifest_sha256': manifest_sha256,
             'dataset_summary': 'dataset_summary.json',
             'manifest': 'depth_manifest.csv',
         }
