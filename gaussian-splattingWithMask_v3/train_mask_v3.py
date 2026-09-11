@@ -18,7 +18,8 @@ def main(argv=None):
     random.seed(a.seed); np.random.seed(a.seed); torch.manual_seed(a.seed); torch.cuda.manual_seed_all(a.seed)
     code=provenance()
     print('[RUN]',json.dumps({'experiment':a.experiment,'features':{n:getattr(a,n) for n in FEATURES},
-          'overrides':a.overrides,'growth':'OFF (v3 A/B)','opacity_reset':'OFF','depth_loss':'OFF',
+          'overrides':a.overrides,'growth':'OFF','opacity_reset':'OFF',
+          'depth_loss':'LIDAR CAMERA-Z' if a.lidar_depth_loss else 'OFF',
           'hard_scale_bounds':a.scale_bounds,'seed':a.seed,'val_ellipsoids':a.val_ellipsoids,
           'ellipsoid_sigma':1,'ellipsoid_color':'SH DC + lighting','loss_csv':'every iteration',
           'val_npz':a.val_npz,'checkpoint_interval':a.checkpoint_interval,
@@ -31,6 +32,8 @@ def main(argv=None):
     from render_v3 import export_val,export_final_test
     from experiment_summary_v3 import write_experiment_summary
     pcd,infos,cameras,val_cameras,test_cameras,centers,extent,identity=load_data(a)
+    from lidar_depth_v3 import LidarDepthProvider,lidar_depth_term
+    depth_provider=LidarDepthProvider(pcd.points,a,identity) if a.lidar_depth_loss else None
     (out/'run_manifest.json').write_text(json.dumps({'code':code,'inputs':identity,
         'train_names':[c.image_name for c in cameras],'val_names':[c.image_name for c in val_cameras],
         'test_names':[c.image_name for c in test_cameras]},indent=2),encoding='utf-8')
@@ -63,8 +66,10 @@ def main(argv=None):
     background=torch.zeros(3,device='cuda'); started=time.monotonic()
     iteration=first
     csv_fields=['iteration','rgb_l1','rgb_dssim','total','count','elapsed']
-    csv_fields += [name+'_'+kind for name in ('surface','tangent','normal','flatten','size')
+    csv_fields += [name+'_'+kind for name in ('surface','tangent','normal','flatten','size','lidar_depth')
                    for kind in ('raw','weight','weighted')]
+    csv_fields += ['lidar_depth_valid_pixels','lidar_depth_lidar_pixels',
+                   'lidar_depth_rendered_fraction','lidar_depth_state']
     loss_file=(out/'loss_log.csv').open('x',newline='',encoding='utf-8')
     loss_writer=csv.DictWriter(loss_file,fieldnames=csv_fields); loss_writer.writeheader()
     final_test_summary=None; final_test_dir=None
@@ -85,7 +90,10 @@ def main(argv=None):
             rgb_l1=l1_loss(image,gt); rgb_ssim=1-ssim(image,gt)
             rgb_loss=(1-opt.lambda_dssim)*rgb_l1+opt.lambda_dssim*rgb_ssim
             geo,terms=geometry_losses(g.get_xyz,g.get_scaling,g.get_rotation,ref,a,iteration)
-            loss=rgb_loss+geo
+            depth_loss,depth_stats=lidar_depth_term(
+                cam,g,pipe,depth_provider,a,iteration)
+            terms['lidar_depth']=depth_stats
+            loss=rgb_loss+geo+depth_loss
             if not torch.isfinite(loss): raise FloatingPointError('Nonfinite total loss')
             loss.backward()
             check_finite(g,gradients=True)
@@ -107,6 +115,10 @@ def main(argv=None):
             csv_record={k:v for k,v in record.items() if k!='losses'}
             csv_record.update({name+'_'+kind:terms[name][kind] for name in terms
                                for kind in ('raw','weight','weighted')})
+            csv_record.update({'lidar_depth_valid_pixels':depth_stats['valid_pixels'],
+                'lidar_depth_lidar_pixels':depth_stats['lidar_pixels'],
+                'lidar_depth_rendered_fraction':depth_stats['rendered_fraction'],
+                'lidar_depth_state':depth_stats['state']})
             loss_writer.writerow(csv_record)
             if iteration==1 or iteration%a.log_interval==0:
                 loss_file.flush()
