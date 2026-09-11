@@ -34,7 +34,7 @@ def provenance():
 
 def fresh_topology(g):
     n=len(g.get_xyz); dev=g.get_xyz.device
-    return {k:torch.zeros(n,dtype=torch.int32,device=dev) for k in ('epoch_views','max_epoch_views','low_streak')}
+    return {k:torch.zeros(n,dtype=torch.int32,device=dev) for k in ('epoch_views','max_epoch_views','low_streak','densify_count')}
 
 def finish_epoch(state):
     state['max_epoch_views']=torch.maximum(state['max_epoch_views'],state['epoch_views'])
