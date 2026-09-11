@@ -2,14 +2,22 @@
 import argparse
 
 FEATURES = ('init_normal', 'init_flatten', 'orient_cameras', 'surface_loss',
-            'tangent_loss', 'normal_loss', 'flatten_loss', 'size_loss', 'pruning', 'scale_bounds')
+            'tangent_loss', 'normal_loss', 'flatten_loss', 'size_loss', 'pruning', 'scale_bounds',
+            'lidar_depth_loss')
 LOSSES = ('surface', 'tangent', 'normal', 'flatten', 'size')
+
+def preset_features(experiment):
+    enabled={'init_normal','init_flatten','orient_cameras','pruning'}
+    if experiment in ('B','C','E'): enabled.update(LOSSES)
+    if experiment in ('C','E'): enabled.add('scale_bounds')
+    if experiment=='E': enabled.add('lidar_depth_loss')
+    return {name:name in enabled for name in FEATURES}
 
 def parse_args(argv=None):
     from arguments import OptimizationParams, PipelineParams
     p = argparse.ArgumentParser(description='LiDAR A/B v3 (fixed population, optional pruning)')
     op, pp = OptimizationParams(p), PipelineParams(p)
-    p.add_argument('--experiment', choices=['A', 'B', 'C'], default='A')
+    p.add_argument('--experiment', choices=['A', 'B', 'C', 'E'], default='A')
     for name in FEATURES:
         p.add_argument('--'+name, choices=['on', 'off'], default=None)
     p.add_argument('-s', '--source_path', required=True)
@@ -49,13 +57,28 @@ def parse_args(argv=None):
     p.add_argument('--prune_patience', type=int, default=3)
     p.add_argument('--prune_max_fraction', type=float, default=.01)
     p.add_argument('--log_interval', type=int, default=100)
-    p.add_argument('--val_interval', type=int, default=1000)
+    p.add_argument('--val_interval', type=int, default=5000)
     p.add_argument('--checkpoint_interval', type=int, default=50000)
     p.add_argument('--val_npz', choices=['on','off'], default='off',
                    help='Optional raw validation arrays; PNG and CSV output is unaffected')
     p.add_argument('--depth_visual_max', type=float, default=15.)
     p.add_argument('--val_ellipsoids', choices=['on','off'], default='on',
                    help='Diagnostic opaque 1-sigma DC-color ellipsoids; no training effect')
+    p.add_argument('--lidar_depth_cache', default='',
+                   help='Local temporary cache directory; E requires it and it must not be on Drive')
+    p.add_argument('--lambda_lidar_depth', type=float, default=.05)
+    p.add_argument('--lidar_depth_start', type=int, default=1000)
+    p.add_argument('--lidar_depth_warmup', type=int, default=4000)
+    p.add_argument('--lidar_depth_min', type=float, default=.1)
+    p.add_argument('--lidar_depth_max', type=float, default=15.)
+    p.add_argument('--lidar_depth_splat_radius', type=int, default=1)
+    p.add_argument('--lidar_depth_edge_relative', type=float, default=.02)
+    p.add_argument('--lidar_depth_edge_absolute', type=float, default=.02)
+    p.add_argument('--lidar_depth_alpha_min', type=float, default=.05)
+    p.add_argument('--lidar_depth_min_pixels', type=int, default=64)
+    p.add_argument('--lidar_depth_chunk', type=int, default=250000)
+    p.add_argument('--lidar_depth_huber_beta', type=float, default=.02)
+    p.add_argument('--lidar_depth_cache_memory', type=int, default=32)
     p.add_argument('--resume', default='')
     # Remove inherited controls unused by the v3 fixed-population runner.
     removed = {'densification_interval','opacity_reset_interval','densify_from_iter',
@@ -71,20 +94,31 @@ def parse_args(argv=None):
     if a.final_test=='on' and a.iterations==150000 and not a.test_file:
         p.error('--test_file is required when --final_test on for a 150000-iteration formal run')
     a.overrides = {n:getattr(a,n) for n in FEATURES if getattr(a,n) is not None}
+    preset=preset_features(a.experiment)
     for n in FEATURES:
-        default = (a.experiment=='C' if n=='scale_bounds' else
-                   n in ('init_normal','init_flatten','orient_cameras','pruning') or a.experiment in ('B','C'))
-        setattr(a,n, default if getattr(a,n) is None else getattr(a,n)=='on')
+        setattr(a,n,preset[n] if getattr(a,n) is None else getattr(a,n)=='on')
     for n in LOSSES:
         if getattr(a,'lambda_'+n)<0 or getattr(a,n+'_start')<0 or getattr(a,n+'_warmup')<0:
             p.error('loss weights and schedules must be nonnegative')
     for n in ('iterations','log_interval','val_interval','checkpoint_interval','prune_interval',
               'neighbor_radius_ratio','surface_tolerance_ratio','tangent_radius_ratio',
-              'thickness_ratio','size_ratio','depth_visual_max','prune_patience','prune_min_views','lazy_cache'):
+              'thickness_ratio','size_ratio','depth_visual_max','prune_patience','prune_min_views','lazy_cache',
+              'lidar_depth_min','lidar_depth_max','lidar_depth_min_pixels','lidar_depth_chunk',
+              'lidar_depth_huber_beta','lidar_depth_cache_memory'):
         if getattr(a,n)<=0: p.error(n+' must be positive')
     if a.knn<3 or not 0<a.planarity_min<1 or not 0<a.prune_max_fraction<1:
         p.error('invalid neighborhood, confidence or pruning fraction')
     if not 0<a.prune_opacity<1 or a.prune_start<0: p.error('invalid pruning settings')
+    if a.lambda_lidar_depth<0 or a.lidar_depth_start<0 or a.lidar_depth_warmup<0:
+        p.error('invalid LiDAR depth loss weight/schedule')
+    if a.lidar_depth_max<=a.lidar_depth_min or a.lidar_depth_splat_radius<0:
+        p.error('invalid LiDAR depth range/splat radius')
+    if a.lidar_depth_edge_relative<0 or a.lidar_depth_edge_absolute<0:
+        p.error('invalid LiDAR depth edge thresholds')
+    if not 0<a.lidar_depth_alpha_min<1:
+        p.error('invalid LiDAR depth alpha threshold')
+    if a.lidar_depth_loss and not a.lidar_depth_cache:
+        p.error('--lidar_depth_cache is required when lidar_depth_loss is on')
     a.optimizer_type='default'
     a.data_device='cpu'; a.lazy_load=True; a.train_test_exp=False
     # Deterministic A/B: black background, no depth training, no opacity resets or growth.
