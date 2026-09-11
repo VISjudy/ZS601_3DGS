@@ -634,6 +634,8 @@ def lidar_depth_term(cam, g, pipe, provider, args, iteration):
         'rendered_fraction': 0.0,
         'mean_target_depth': 0.0,
         'distance_weight_mean': 0.0,
+        'unweighted_raw': 0.0,
+        'distance_weighted_raw': 0.0,
     }
     if not args.lidar_depth_loss or iteration < args.lidar_depth_start or configured == 0:
         state = 'OFF' if not args.lidar_depth_loss else 'WAITING_OR_ZERO_WEIGHT'
@@ -686,9 +688,13 @@ def lidar_depth_term(cam, g, pipe, provider, args, iteration):
         args.lidar_depth_weight_min,
         args.lidar_depth_weight_max,
     )
-    raw = (per_pixel * per_distance).sum() / per_distance.sum().clamp_min(1e-8)
-    return weight * raw, {
-        'raw': float(raw.detach()),
+    unweighted_raw = per_pixel.mean()
+    distance_weighted_raw = (
+        (per_pixel * per_distance).sum() / per_distance.sum().clamp_min(1e-8)
+    )
+    return weight * distance_weighted_raw, {
+        # raw retains the common v3 meaning: the optimized term before lambda.
+        'raw': float(distance_weighted_raw.detach()),
         'weight': weight,
         'weighted': float(raw.detach()) * weight,
         'valid_pixels': count,
@@ -696,5 +702,7 @@ def lidar_depth_term(cam, g, pipe, provider, args, iteration):
         'rendered_fraction': fraction,
         'mean_target_depth': float(target_values.mean()),
         'distance_weight_mean': float(per_distance.mean()),
+        'unweighted_raw': float(unweighted_raw.detach()),
+        'distance_weighted_raw': float(distance_weighted_raw.detach()),
         'state': 'ACTIVE',
     }
