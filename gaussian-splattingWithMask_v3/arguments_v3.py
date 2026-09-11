@@ -79,6 +79,7 @@ def parse_args(argv=None):
     p.add_argument('--lidar_depth_min_neighbors', type=int, default=2)
     p.add_argument('--lidar_depth_alpha_min', type=float, default=.05)
     p.add_argument('--lidar_depth_min_pixels', type=int, default=64)
+    p.add_argument('--lidar_depth_min_coverage', type=float, default=.001)
     p.add_argument('--lidar_depth_chunk', type=int, default=250000)
     p.add_argument('--lidar_depth_huber_beta', type=float, default=.02)
     p.add_argument('--lidar_depth_distance_power', type=float, default=1.)
@@ -86,6 +87,9 @@ def parse_args(argv=None):
     p.add_argument('--lidar_depth_weight_max', type=float, default=4.)
     p.add_argument('--lidar_depth_backproject_samples', type=int, default=4096)
     p.add_argument('--lidar_depth_backproject_tolerance', type=float, default=.06)
+    p.add_argument('--lidar_depth_backproject_quantile', type=float, default=.99)
+    p.add_argument('--lidar_depth_backproject_min_fraction', type=float, default=.99)
+    p.add_argument('--lidar_depth_reprojection_tolerance_px', type=float, default=2.)
     p.add_argument('--lidar_depth_cache_memory', type=int, default=32)
     p.add_argument('--resume', default='')
     # Remove inherited controls unused by the v3 fixed-population runner.
@@ -114,7 +118,7 @@ def parse_args(argv=None):
               'lidar_depth_min','lidar_depth_max','lidar_depth_min_pixels','lidar_depth_chunk',
               'lidar_depth_huber_beta','lidar_depth_cache_memory','lidar_depth_min_neighbors',
               'lidar_depth_weight_min','lidar_depth_weight_max','lidar_depth_backproject_samples',
-              'lidar_depth_backproject_tolerance'):
+              'lidar_depth_backproject_tolerance','lidar_depth_reprojection_tolerance_px'):
         if getattr(a,n)<=0: p.error(n+' must be positive')
     if a.knn<3 or not 0<a.planarity_min<1 or not 0<a.prune_max_fraction<1:
         p.error('invalid neighborhood, confidence or pruning fraction')
@@ -129,6 +133,12 @@ def parse_args(argv=None):
         p.error('invalid LiDAR depth alpha threshold')
     if a.lidar_depth_weight_max<a.lidar_depth_weight_min:
         p.error('invalid LiDAR depth distance weight bounds')
+    if not 0<a.lidar_depth_min_coverage<1:
+        p.error('lidar_depth_min_coverage must be in (0,1)')
+    if not 0<a.lidar_depth_backproject_quantile<=1:
+        p.error('lidar_depth_backproject_quantile must be in (0,1]')
+    if not 0<a.lidar_depth_backproject_min_fraction<=1:
+        p.error('lidar_depth_backproject_min_fraction must be in (0,1]')
     if a.lidar_depth_loss and not a.lidar_depth_cache:
         p.error('--lidar_depth_cache is required when lidar_depth_loss is on')
     if a.lidar_depth_loss and a.iterations==150000 and not a.lidar_depth_export:
