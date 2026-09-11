@@ -97,3 +97,80 @@ def export_val(a,iteration,cameras,g,pipe):
         'normal':'camera coordinates, oriented toward this camera, RGB=(normal+1)/2',
         'depth_display_range':[0,a.depth_visual_max],'cameras':manifest},indent=2),encoding='utf-8')
     print(f'[VAL] iter={iteration} RGB/normal/depth/ellipsoid={a.val_ellipsoids} raw_npz={a.val_npz}: {out}',flush=True)
+
+
+def _masked_metrics(cam,rgb):
+    from utils.loss_utils import ssim
+    gt=cam.original_image.cuda()
+    mask=cam.alpha_mask.cuda() if cam.alpha_mask is not None else torch.ones_like(rgb[:1])
+    denom=(3*mask.sum()).clamp_min(1)
+    residual=rgb-gt
+    mse=float((residual.square()*mask).sum()/denom)
+    mae=float((residual.abs()*mask).sum()/denom)
+    return {'masked_psnr':float(-10*np.log10(max(mse,1e-12))),
+            'masked_mae':mae,
+            'ssim_zero_mask_full_image':float(ssim(rgb*mask,gt)),
+            'valid_pixel_fraction':float(mask.mean())}
+
+def rank_worst_test(records,count=10):
+    """Stable ranking contract: low masked PSNR first, then image name."""
+    return sorted(records,key=lambda r:(r['masked_psnr'],r['image_name']))[:min(count,len(records))]
+
+@torch.no_grad()
+def export_final_test(a,iteration,cameras,g,pipe):
+    """Evaluate all test cameras, then save heavy diagnostics only for the worst ten."""
+    from gaussian_renderer import render
+    if iteration!=150000:
+        raise ValueError('Final test export is reserved for the completed 150000 iteration model')
+    if not cameras:
+        raise ValueError('Final test requires a nonempty explicit test camera list')
+    out=Path(a.model_path)/'test_final'/f'iteration_{iteration:06d}'
+    out.mkdir(parents=True,exist_ok=False)
+    metric_path=out/'test_metrics.csv'
+    black=torch.zeros(3,device='cuda')
+    records=[]
+    for i,cam in enumerate(cameras):
+        rgb=render(cam,g,pipe,black)['render']
+        row={'iteration':iteration,'camera_index':i,'image_name':cam.image_name,
+             **_masked_metrics(cam,rgb),'count':len(g.get_xyz)}
+        append_csv(metric_path,row); records.append(row)
+        if (i+1)%25==0 or i+1==len(cameras):
+            print(f'[FINAL TEST] metrics {i+1}/{len(cameras)}',flush=True)
+    numeric=('masked_psnr','masked_mae','ssim_zero_mask_full_image','valid_pixel_fraction')
+    aggregates={}
+    for kind,fn in (('MEAN',np.mean),('MEDIAN',np.median),('MIN',np.min),('MAX',np.max)):
+        row={'iteration':iteration,'camera_index':-1,'image_name':kind,'count':len(g.get_xyz)}
+        row.update({k:float(fn([r[k] for r in records])) for k in numeric})
+        append_csv(metric_path,row); aggregates[kind.lower()]=row
+    worst=rank_worst_test(records,10)
+    ellipsoids=None
+    from ellipsoid_v3 import EllipsoidRenderer
+    ellipsoids=EllipsoidRenderer(g)
+    exported=[]
+    for rank,row in enumerate(worst,1):
+        cam=cameras[row['camera_index']]
+        stem=f'worst_{rank:02d}_cam_{row["camera_index"]:04d}'
+        rgb=render(cam,g,pipe,black)['render']
+        depth,normal,alpha,valid,nvalid=render_geometry(cam,g,pipe)
+        save_rgb(out/(stem+'_rgb.png'),rgb)
+        ell_image,ell_stat=ellipsoids.render(cam)
+        ell_image.save(out/(stem+'_ellipsoid.png'))
+        save_rgb(out/(stem+'_normal.png'),torch.where(nvalid[None],(normal+1)/2,0.))
+        gray=torch.nan_to_num(depth,nan=0.).clamp(0,a.depth_visual_max)/a.depth_visual_max
+        save_rgb(out/(stem+'_depth.png'),gray[None].repeat(3,1,1))
+        exported.append({'rank':rank,**row,'files':{
+            'rgb':stem+'_rgb.png','ellipsoid_1sigma':stem+'_ellipsoid.png',
+            'depth':stem+'_depth.png','normal':stem+'_normal.png'},
+            'valid_depth_fraction':float(valid.float().mean()),'ellipsoid':ell_stat})
+        print(f'[FINAL TEST WORST] rank={rank} camera={row["image_name"]} psnr={row["masked_psnr"]:.4f}',flush=True)
+    summary={'iteration':iteration,'camera_count':len(records),'ranking':'masked_psnr ascending, tie=image_name',
+        'metrics_contract':{
+            'masked_psnr':'PSNR from MSE normalized by valid mask pixels and 3 RGB channels',
+            'masked_mae':'MAE normalized by valid mask pixels and 3 RGB channels',
+            'ssim_zero_mask_full_image':'SSIM on prediction and GT after excluded pixels are zeroed; full-image SSIM',
+            'ellipsoid':'opaque 1-sigma Gaussian ellipsoids with SH DC color and diagnostic lighting',
+            'depth':'opacity-normalized expected Gaussian-center camera z; diagnostic only'},
+        'aggregates':aggregates,'worst10':exported,'raw_geometry_npz_saved':False}
+    (out/'test_summary.json').write_text(json.dumps(summary,indent=2,ensure_ascii=False),encoding='utf-8')
+    print(f'[FINAL TEST DONE] cameras={len(records)} worst={len(worst)} metrics={metric_path}',flush=True)
+    return summary,out
