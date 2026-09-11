@@ -17,7 +17,7 @@ python train_mask_v3.py --experiment A \
   --train_file /content/work/train_v3.txt \
   --val_file /content/dataset/sparse/images-val10.txt \
   --test_file /content/dataset/sparse/images_test.txt \
-  --iterations 30000 --position_lr_max_steps 30000
+  --iterations 150000 --position_lr_max_steps 150000
 ```
 
 将 `--experiment A` 改成 `B` 开启五项几何约束。例如 `--experiment B --normal_loss off` 只关闭法向 loss。每个功能只有 `on/off` 一种覆盖表达；不接受旧 `--init_2d` / `--freeze_2d_z` 等混合控制，原入口仍支持原参数。
@@ -56,7 +56,7 @@ surface 是固定局部平面距离的 Huber；tangent 是超出切向范围的�
 - `valXX_rgb.png`：RGB。
 - `valXX_normal.png`：朝当前相机的相机系法向，RGB=(normal+1)/2，无效像素黑色。
 - `valXX_depth.png`：固定显示范围的灰度深度，默认0–15场景单位；不逐帧自动拉伸。
-- `valXX_geometry.npz`：float深度、法向、透明度和有效 mask。
+- 默认不生成 `geometry.npz`；只有显式设置 `--val_npz on` 才保存原始几何数组。
 - `manifest.json`：相机名、R/T、显示范围、有效区PSNR及输出语义。
 
 深度使用额外属性通道计算 `sum(alpha*T*z_center)/sum(alpha*T)`，不是原 renderer 的未归一化逆深度，也不是无偏射线—表面深度。它只用于诊断，不加入 A/B loss。法向在合成前按视角定向，合成后归一化并过滤无效像素。颜色曝光变换不应用于几何通道。
@@ -67,7 +67,7 @@ surface 是固定局部平面距离的 Huber；tangent 是超出切向范围的�
 
 ## 恢复和版本
 
-每1000步及结束保存完整 checkpoint 和 Gaussian PLY。恢复命令保持全部原参数，仅增加 `--resume <checkpoint>` 并使用新的 `-m`。不允许把旧模型 PLY 当作完整恢复。
+每50000步及结束保存完整 checkpoint 和 Gaussian PLY。恢复命令保持全部原参数，仅增加 `--resume <checkpoint>` 并使用新的 `-m`。不允许把旧模型 PLY 当作完整恢复。
 
 checkpoint 包括模型、优化器、曝光状态、几何参考、剪枝计数、相机采样栈、随机状态、输入身份及 v3 源码哈希。严格检查源码和配置一致；核心输入、训练与val图像及mask均计算内容SHA256，重新解压后的mtime变化不影响数据校验。
 
@@ -95,3 +95,35 @@ CPU测试覆盖旋转、几何梯度、开关、相机定向和剪枝引用。Co
 ## 云端存储策略
 
 默认 `--val_npz off`：验证仅保存 PNG 和 CSV，不生成 geometry.npz。`--checkpoint_interval 50000`：正式训练在50000、100000、150000步保存checkpoint及PLY，最终步总会保存（包括200步冒烟）。初始PLY和reference_v3.npz用于初始化记录，仍保留。已有产物不删除。运行中的旧进程不会自动加载新版源码，需单独完成可验证的切换。
+
+## D 组：贴面受控增密
+
+`--experiment D` 继承 C 的全部功能，并独立开启 `--surface_densify on`。标准 `densify_and_prune` 保持关闭。
+
+D 在 10000–100000 步、每 10000 步检查一次候选。候选必须同时满足：屏幕空间位置梯度达到阈值、opacity 达标、被足够多相机视锥覆盖、LiDAR 平面置信度有效、中心位于局部平面容差内且未超过原锚点的切向范围。每次最多新增当前点数的 1%，总点数最多为初始点数的 1.25 倍。
+
+子高斯中心沿固定 LiDAR 平面的切向产生，再投影回该平面；它继承父高斯外观、旋转和 LiDAR 引用，尺度缩小到父高斯的 0.7 倍并立即受 C 的 XY/厚度上限约束。新增时同步优化器状态、几何 reference、剪枝计数和 checkpoint 状态。`surface_densify_log.jsonl` 记录每次候选数、新增数、增长预算和平均梯度。
+
+各项参数均可单独覆盖，例如 `--experiment D --surface_densify off` 应退化到 C。D 的关键新增参数为：
+
+- `--surface_densify_grad_threshold 0.0002`
+- `--surface_densify_plane_ratio 0.25`
+- `--surface_densify_offset_ratio 0.35`
+- `--surface_densify_child_scale 0.7`
+- `--surface_densify_max_fraction 0.01`
+- `--surface_densify_max_points_ratio 1.25`
+
+## 15万步正式实验验收规则
+
+一次正式实验只有在150000步模型、完整test评估和总结文档全部写入输出目录后才标记完成。
+
+- `--final_test on` 默认开启；150000步正式运行必须提供非空的 `--test_file`。
+- 完整test集逐相机计算 `masked_psnr`、`masked_mae` 和 `ssim_zero_mask_full_image`，保存到 `test_final/iteration_150000/test_metrics.csv`；CSV同时包含MEAN、MEDIAN、MIN和MAX汇总行。
+- 最差相机按 `masked_psnr` 升序排序，同分按 `image_name`，取前10张。
+- 只对这10张保存 RGB、1σ彩色椭球、深度和法向量PNG。test不生成NPZ，也不为全部test相机保存重型诊断图。
+- `test_summary.json` 保存指标定义、汇总值、最差10张及对应文件名。
+- `experiment_summary.md` 自动记录相对baseline A的功能变化、关键超参数、相对原始默认值的变化、最终test结果、最差10张、最终val与几何日志。给出 `--baseline_result <baseline输出目录>` 时，还会计算同协议test均值差。
+- `completed.json` 中的 `final_test_complete` 必须为true，正式实验才通过验收。评估或总结失败会写入 `failure.json`，不会提前标记完成。
+- 200步冒烟显式使用 `--final_test off`。
+
+指标协议固定：PSNR和MAE按有效mask像素数归一化；SSIM为置零mask后的整图SSIM。不同test列表、mask协议或旧指标不得直接作数值对比。
