@@ -76,3 +76,8 @@ python train.py \
 ```
 
 The two arms should write to separate output folders and be compared only after both have saved checkpoints, logs, validation renders, and metrics.
+
+## Colab notebook and project memory
+
+- Colab Pro+ smoke notebook: `colab/ZS601_2DGS_ProPlus_smoke.ipynb`
+- Project memory: `docs/PROJECT_MEMORY.md`
