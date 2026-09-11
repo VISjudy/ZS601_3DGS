@@ -118,7 +118,7 @@ def surface_densify(g,reference,state,a,iteration):
     return reference,state,{'iteration':iteration,'eligible':len(candidates),'added':take,
         'count':len(g.get_xyz),'budget_remaining':max_points-len(g.get_xyz),
         'mean_selected_gradient':float(gradient[selected].mean()),
-        'seed_sources_used':int((state['densify_count'][:initial_count]>0).sum()),
-        'seed_source_coverage':float((state['densify_count'][:initial_count]>0).float().mean()),
+        'seed_sources_used':int((state['is_seed']&(state['densify_count']>0)).sum()),
+        'seed_source_coverage':float((state['is_seed']&(state['densify_count']>0)).sum()/max(initial_count,1)),
         'offset_ratio':a.surface_densify_offset_ratio,
         'criterion':'screen gradient + opacity + views + reliable LiDAR plane + surface/tangent gates'}
