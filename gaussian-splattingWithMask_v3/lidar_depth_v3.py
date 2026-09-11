@@ -157,6 +157,13 @@ class LidarDepthProvider:
             'min_neighbors': args.lidar_depth_min_neighbors,
             'edge_relative': args.lidar_depth_edge_relative,
             'edge_absolute': args.lidar_depth_edge_absolute,
+            'minimum_pixels': args.lidar_depth_min_pixels,
+            'minimum_coverage': args.lidar_depth_min_coverage,
+            'backproject_samples': args.lidar_depth_backproject_samples,
+            'backproject_tolerance': args.lidar_depth_backproject_tolerance,
+            'backproject_quantile': args.lidar_depth_backproject_quantile,
+            'backproject_min_fraction': args.lidar_depth_backproject_min_fraction,
+            'reprojection_tolerance_px': args.lidar_depth_reprojection_tolerance_px,
         }
         self.root = Path(args.lidar_depth_cache).expanduser().resolve()
         if '/drive/' in self.root.as_posix().lower():
