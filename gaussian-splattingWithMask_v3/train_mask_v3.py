@@ -87,7 +87,8 @@ def main(argv=None):
                    for kind in ('raw','weight','weighted')]
     csv_fields += ['lidar_depth_valid_pixels','lidar_depth_lidar_pixels',
                    'lidar_depth_rendered_fraction','lidar_depth_mean_target_depth',
-                   'lidar_depth_distance_weight_mean','lidar_depth_state']
+                   'lidar_depth_distance_weight_mean','lidar_depth_unweighted_raw',
+                   'lidar_depth_distance_weighted_raw','lidar_depth_state']
     loss_file=(out/'loss_log.csv').open('x',newline='',encoding='utf-8')
     loss_writer=csv.DictWriter(loss_file,fieldnames=csv_fields); loss_writer.writeheader()
     final_test_summary=None; final_test_dir=None
@@ -138,6 +139,8 @@ def main(argv=None):
                 'lidar_depth_rendered_fraction':depth_stats['rendered_fraction'],
                 'lidar_depth_mean_target_depth':depth_stats['mean_target_depth'],
                 'lidar_depth_distance_weight_mean':depth_stats['distance_weight_mean'],
+                'lidar_depth_unweighted_raw':depth_stats['unweighted_raw'],
+                'lidar_depth_distance_weighted_raw':depth_stats['distance_weighted_raw'],
                 'lidar_depth_state':depth_stats['state']})
             loss_writer.writerow(csv_record)
             if iteration==1 or iteration%a.log_interval==0:
