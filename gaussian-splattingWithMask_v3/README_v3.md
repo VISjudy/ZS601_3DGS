@@ -14,7 +14,7 @@
 - 伪 GT 保存为 16-bit PNG：0 是无效值，1–65535 线性映射 `lidar_depth_min..lidar_depth_max`。
 - 正式训练前会重新读取已保存 PNG，反投影为 3D，再计算到原始 LiDAR 的最近邻距离。任一相机 P95 超过默认 0.06 场景单位时，训练不会开始。
 - `depth_manifest.csv` 保存逐相机覆盖率、深度范围、PNG 量化误差和反投影误差；`dataset_summary.json` 与 `verification.json` 保存总体验收。
-- train/val/test 的原始深度 PNG 全部保留。为控制 Drive 空间，彩色预览只保存 val/test；训练缓存是 Colab 本地 NPZ，不写入 Drive。
+- train/val/test 的原始深度 PNG 全部保留。为控制 Drive 空间，彩色预览只保存 val/test；训练缓存使用同一 uint16 编码的 Colab 本地 PNG，不写入 Drive。
 - 恢复训练可以传入既有的已验证深度目录。程序只读复用，不覆盖内容；身份或验证不匹配会停止。
 
 ## 深度损失
