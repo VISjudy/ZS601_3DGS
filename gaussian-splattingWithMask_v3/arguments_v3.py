@@ -8,14 +8,14 @@ LOSSES = ('surface', 'tangent', 'normal', 'flatten', 'size')
 
 def preset_features(experiment):
     enabled={'init_normal','init_flatten','orient_cameras','pruning'}
-    if experiment in ('B','C','E'): enabled.update(LOSSES)
+    if experiment in ('B','C','E'): enabled.update(name+'_loss' for name in LOSSES)
     if experiment in ('C','E'): enabled.add('scale_bounds')
     if experiment=='E': enabled.add('lidar_depth_loss')
     return {name:name in enabled for name in FEATURES}
 
 def parse_args(argv=None):
     from arguments import OptimizationParams, PipelineParams
-    p = argparse.ArgumentParser(description='LiDAR A/B v3 (fixed population, optional pruning)')
+    p = argparse.ArgumentParser(description='LiDAR 3DGS v3 E (C geometry plus occlusion-aware LiDAR depth)')
     op, pp = OptimizationParams(p), PipelineParams(p)
     p.add_argument('--experiment', choices=['A', 'B', 'C', 'E'], default='A')
     for name in FEATURES:
@@ -67,7 +67,7 @@ def parse_args(argv=None):
     p.add_argument('--lidar_depth_cache', default='',
                    help='Local temporary cache directory; E requires it and it must not be on Drive')
     p.add_argument('--lidar_depth_export', default='',
-                   help='New Drive dataset folder for formal pseudo-GT export')
+                   help='Brand-new Drive dataset folder for formal pseudo-GT PNGs and validation reports')
     p.add_argument('--lambda_lidar_depth', type=float, default=.05)
     p.add_argument('--lidar_depth_start', type=int, default=1000)
     p.add_argument('--lidar_depth_warmup', type=int, default=4000)
@@ -135,6 +135,6 @@ def parse_args(argv=None):
         p.error('--lidar_depth_export is required for a 150000-iteration E run')
     a.optimizer_type='default'
     a.data_device='cpu'; a.lazy_load=True; a.train_test_exp=False
-    # Deterministic A/B: black background, no depth training, no opacity resets or growth.
+    # Deterministic comparison: black background, no opacity resets or growth.
     a.white_background=False
     return a, op.extract(a), pp.extract(a)
