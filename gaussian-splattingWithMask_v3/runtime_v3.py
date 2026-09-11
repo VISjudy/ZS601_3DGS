@@ -18,7 +18,7 @@ def append_json(path,value):
 
 def signature(a):
     # Input contents are checked separately, allowing a new Colab extraction path.
-    paths={'resume','model_path','source_path','point_cloud','train_file','val_file','cameras_file','test_file','baseline_result'}
+    paths={'resume','model_path','source_path','point_cloud','train_file','val_file','cameras_file','test_file','baseline_result','lidar_depth_cache','lidar_depth_export'}
     return {k:v for k,v in vars(a).items() if k not in paths}
 
 def provenance():
