@@ -151,7 +151,7 @@ class LidarDepthProvider:
             'inputs': dict(sorted(input_identity.items())),
             'depth_min': args.lidar_depth_min,
             'depth_max': args.lidar_depth_max,
-            'projection': 'camera = world @ R + T; centered FoV intrinsics; rounded pixel',
+            'projection': 'camera = world @ R + T; centered FoV intrinsics; floor to pixel with center at u+0.5,v+0.5',
             'zbuffer': 'nearest positive camera-z per pixel',
             'splat_radius': args.lidar_depth_splat_radius,
             'min_neighbors': args.lidar_depth_min_neighbors,
