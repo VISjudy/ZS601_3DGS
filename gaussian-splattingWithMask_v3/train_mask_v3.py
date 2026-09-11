@@ -5,6 +5,7 @@ import numpy as np
 import torch
 from arguments_v3 import parse_args,FEATURES
 from scale_bounds_v3 import apply_scale_bounds
+from surface_densify_v3 import accumulate_surface_gradient,surface_densify
 from geometry_v3 import build_reference,tensor_reference,normals_to_quaternions,geometry_losses,diagnostics
 from runtime_v3 import (append_json,provenance,fresh_topology,finish_epoch,prune,check_finite,
                         save_checkpoint,restore_checkpoint)
@@ -18,7 +19,8 @@ def main(argv=None):
     random.seed(a.seed); np.random.seed(a.seed); torch.manual_seed(a.seed); torch.cuda.manual_seed_all(a.seed)
     code=provenance()
     print('[RUN]',json.dumps({'experiment':a.experiment,'features':{n:getattr(a,n) for n in FEATURES},
-          'overrides':a.overrides,'growth':'OFF (v3 A/B)','opacity_reset':'OFF','depth_loss':'OFF',
+          'overrides':a.overrides,'growth':'SURFACE CONTROLLED' if a.surface_densify else 'OFF',
+          'opacity_reset':'OFF','depth_loss':'OFF',
           'hard_scale_bounds':a.scale_bounds,'seed':a.seed,'val_ellipsoids':a.val_ellipsoids,
           'ellipsoid_sigma':1,'ellipsoid_color':'SH DC + lighting','loss_csv':'every iteration',
           'val_npz':a.val_npz,'checkpoint_interval':a.checkpoint_interval,
@@ -88,6 +90,7 @@ def main(argv=None):
             loss=rgb_loss+geo
             if not torch.isfinite(loss): raise FloatingPointError('Nonfinite total loss')
             loss.backward()
+            if a.surface_densify: accumulate_surface_gradient(g,pkg)
             check_finite(g,gradients=True)
             with torch.no_grad():
                 state['epoch_views']+=(pkg['radii']>0).to(torch.int32)
@@ -101,6 +104,17 @@ def main(argv=None):
                 check_finite(g)
                 ref,state,event=prune(g,ref,state,a,iteration)
                 if event: append_json(out/'prune_log.jsonl',event); print('[PRUNE]',event,flush=True)
+                ref,state,dense_event=surface_densify(g,ref,state,a,iteration)
+                if dense_event:
+                    append_json(out/'surface_densify_log.jsonl',dense_event)
+                    print('[SURFACE DENSIFY]',dense_event,flush=True)
+                    if a.scale_bounds and dense_event['added']:
+                        bounds=apply_scale_bounds(g,ref,a)
+                        bound_event={'iteration':iteration,'phase':'post_surface_densify',
+                            **{k:v.item() for k,v in bounds.items()}}
+                        append_json(out/'scale_bounds_log.jsonl',bound_event)
+                        print('[SCALE BOUNDS]',bound_event,flush=True)
+                check_finite(g)
             record={'iteration':iteration,'rgb_l1':float(rgb_l1.detach()),'rgb_dssim':float(rgb_ssim.detach()),
                     'total':float(loss.detach()),'losses':terms,'count':len(g.get_xyz),
                     'elapsed':prior_elapsed+time.monotonic()-started}
