@@ -34,9 +34,14 @@ def provenance():
 
 def fresh_topology(g):
     n=len(g.get_xyz); dev=g.get_xyz.device
-    return {k:torch.zeros(n,dtype=torch.int32,device=dev) for k in ('epoch_views','max_epoch_views','low_streak','densify_count')}
+    state={k:torch.zeros(n,dtype=torch.int32,device=dev)
+           for k in ('epoch_views','recent_epoch_views','max_epoch_views','low_streak','densify_count')}
+    state['is_seed']=torch.ones(n,dtype=torch.bool,device=dev)
+    state['initial_count']=torch.tensor([n],dtype=torch.int64,device=dev)
+    return state
 
 def finish_epoch(state):
+    state['recent_epoch_views'].copy_(state['epoch_views'])
     state['max_epoch_views']=torch.maximum(state['max_epoch_views'],state['epoch_views'])
     state['epoch_views'].zero_()
 
@@ -57,7 +62,7 @@ def prune(g,r,state,a,iteration):
         g.prune_points(remove)
         g.tmp_radii=None
         r={k:v[keep] for k,v in r.items()}
-        state={k:v[keep] for k,v in state.items()}
+        state={k:(v[keep] if v.ndim>0 and len(v)==len(keep) else v) for k,v in state.items()}
     event={'iteration':iteration,'candidates':len(candidates),'removed':len(chosen),
            'remaining':len(g.get_xyz),'criterion':'persistent low opacity with distinct frustum views per sampling epoch'}
     return r,state,event
