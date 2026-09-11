@@ -14,12 +14,17 @@ KEYS=list(UPSTREAM_DEFAULTS)+[
     'surface_tolerance_ratio','tangent_radius_ratio','thickness_ratio','size_ratio',
     'lambda_surface','lambda_tangent','lambda_normal','lambda_flatten','lambda_size',
     'prune_start','prune_interval','prune_opacity','prune_min_views',
-    'prune_patience','prune_max_fraction','val_interval','checkpoint_interval',
+    'prune_patience','prune_max_fraction','surface_densify_start','surface_densify_until',
+    'surface_densify_interval','surface_densify_grad_threshold','surface_densify_plane_ratio',
+    'surface_densify_offset_ratio','surface_densify_child_scale','surface_densify_max_fraction',
+    'surface_densify_max_points_ratio','surface_densify_min_opacity','surface_densify_min_views',
+    'val_interval','checkpoint_interval',
 ]
 A_FEATURES={
     'init_normal':True,'init_flatten':True,'orient_cameras':True,
     'surface_loss':False,'tangent_loss':False,'normal_loss':False,
     'flatten_loss':False,'size_loss':False,'pruning':True,'scale_bounds':False,
+    'surface_densify':False,
 }
 
 def _fmt(v):
@@ -81,7 +86,7 @@ def write_experiment_summary(a,iteration,test_summary,test_dir):
         changed=key in UPSTREAM_DEFAULTS and value!=default
         note='与原始默认值不同' if changed else ('与原始默认值相同' if key in UPSTREAM_DEFAULTS else 'v3 几何/运行参数')
         lines.append(f'| {key} | {_fmt(value)} | {_fmt(default)} | {note} |')
-    lines += ['','固定运行行为：关闭增密和 opacity reset；checkpoint/PLY 每 50000 步；固定 val 每 1000 步。','',
+    lines += ['','固定运行行为：D 仅允许贴面受控增密；标准 densify_and_prune 与 opacity reset 关闭；checkpoint/PLY 每 50000 步；固定 val 每 1000 步。','',
               '## 最终 test 结果','',
               '| 指标 | mean | median | min | max |','|---|---:|---:|---:|---:|']
     for key in ('masked_psnr','masked_mae','ssim_zero_mask_full_image'):
