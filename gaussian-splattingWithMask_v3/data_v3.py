@@ -16,14 +16,16 @@ def load_data(a):
     from utils.graphics_utils import BasicPointCloud
     intr=read_intrinsics_text(a.cameras_file)
     train=read_extrinsics_text(a.train_file); val=read_extrinsics_text(a.val_file)
+    test=read_extrinsics_text(a.test_file) if a.test_file else {}
     train_names=[e.name for e in train.values()]; val_names=[e.name for e in val.values()]
     if not train or len(val)!=10 or len(set(val_names))!=10:
         raise ValueError('Need nonempty train set and exactly ten unique fixed val cameras')
     if len(set(train_names))!=len(train_names): raise ValueError('Duplicate training image names')
     if set(train_names)&set(val_names): raise ValueError('Train/val overlap: fix explicit input lists')
-    if a.test_file:
-        test=read_extrinsics_text(a.test_file)
-        if set(train_names)&{e.name for e in test.values()}: raise ValueError('Train/test overlap')
+    test_names=[e.name for e in test.values()]
+    if len(set(test_names))!=len(test_names): raise ValueError('Duplicate test image names')
+    if set(train_names)&set(test_names): raise ValueError('Train/test overlap')
+    if set(val_names)&set(test_names): raise ValueError('Val/test overlap')
     # Baseline renderer uses a centered projection; reject unsupported calibration silently lost before.
     for c in intr.values():
         if c.model=='PINHOLE': cx,cy=c.params[2:4]
@@ -40,7 +42,7 @@ def load_data(a):
                 raise FileNotFoundError(str(image)+' / '+str(mask))
         return readColmapCameras(extr,intr,None,str(root/a.images),
                 str(root/a.alpha_masks) if a.alpha_masks else '', '', [])
-    ti,vi=infos(train),infos(val)
+    ti,vi,xi=infos(train),infos(val),infos(test)
     p=Path(a.point_cloud)
     if p.suffix.lower()=='.las':
         import laspy
@@ -60,7 +62,7 @@ def load_data(a):
     if a.test_file: identity['test_file']=sha256(a.test_file)
     # Content identity survives re-extraction on a new Colab runtime (mtime does not).
     metadata=[]
-    for c in ti+vi:
+    for c in ti+vi+xi:
         for f in (c.image_path,c.mask_path):
             if f:
                 metadata.append((str(Path(f).relative_to(root)),sha256(f)))
@@ -69,5 +71,6 @@ def load_data(a):
     set_lazy_cache_size(a.lazy_cache)
     cams=cameraList_from_camInfos(ti,1.,a,False,False)
     vals=cameraList_from_camInfos(vi,1.,a,False,True)
-    print(f'[DATA] explicit TEXT train={len(ti)} val={len(vi)} overlap=0 points={len(xyz)} units={a.units}')
-    return BasicPointCloud(xyz.astype('f4'),color,np.zeros_like(xyz,dtype='f4')),ti,cams,vals,centers,max(float(getNerfppNorm(ti)['radius']),1e-3),identity
+    tests=cameraList_from_camInfos(xi,1.,a,False,True)
+    print(f'[DATA] explicit TEXT train={len(ti)} val={len(vi)} test={len(xi)} overlap=0 points={len(xyz)} units={a.units}')
+    return BasicPointCloud(xyz.astype('f4'),color,np.zeros_like(xyz,dtype='f4')),ti,cams,vals,tests,centers,max(float(getNerfppNorm(ti)['radius']),1e-3),identity
