@@ -18,7 +18,11 @@ def parse_args(argv=None):
     p.add_argument('--train_file', required=True, help='Explicit COLMAP images text')
     p.add_argument('--val_file', required=True, help='Exactly ten fixed cameras, never resampled')
     p.add_argument('--cameras_file', required=True)
-    p.add_argument('--test_file', default='', help='Optional test text; assert train disjoint')
+    p.add_argument('--test_file', default='', help='Explicit final test list; required for a 150k formal run')
+    p.add_argument('--final_test', choices=['on','off'], default='on',
+                   help='At a completed 150k run, evaluate every test camera and export worst ten')
+    p.add_argument('--baseline_result', default='',
+                   help='Optional completed baseline output used for metric deltas in the summary')
     p.add_argument('--images', default='images')
     p.add_argument('--alpha_masks', default='masks')
     p.add_argument('--resolution', type=int, default=1)
@@ -64,6 +68,8 @@ def parse_args(argv=None):
                 if action in group._group_actions: group._group_actions.remove(action)
             for option in action.option_strings: p._option_string_actions.pop(option, None)
     a = p.parse_args(argv)
+    if a.final_test=='on' and a.iterations==150000 and not a.test_file:
+        p.error('--test_file is required when --final_test on for a 150000-iteration formal run')
     a.overrides = {n:getattr(a,n) for n in FEATURES if getattr(a,n) is not None}
     for n in FEATURES:
         default = (a.experiment=='C' if n=='scale_bounds' else
