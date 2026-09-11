@@ -29,9 +29,12 @@ KEYS = list(UPSTREAM_DEFAULTS) + [
     'lidar_depth_splat_radius', 'lidar_depth_edge_relative',
     'lidar_depth_edge_absolute', 'lidar_depth_min_neighbors',
     'lidar_depth_alpha_min', 'lidar_depth_min_pixels',
-    'lidar_depth_huber_beta', 'lidar_depth_distance_power',
+    'lidar_depth_min_coverage', 'lidar_depth_huber_beta',
+    'lidar_depth_distance_power',
     'lidar_depth_weight_min', 'lidar_depth_weight_max',
     'lidar_depth_backproject_samples', 'lidar_depth_backproject_tolerance',
+    'lidar_depth_backproject_quantile', 'lidar_depth_backproject_min_fraction',
+    'lidar_depth_reprojection_tolerance_px',
     'val_interval', 'checkpoint_interval',
 ]
 
