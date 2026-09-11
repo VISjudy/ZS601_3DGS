@@ -86,6 +86,7 @@ class LidarDepthProvider:
             raise ValueError('LiDAR points must be a finite Nx3 array')
         self.points = torch.as_tensor(self.points_cpu, dtype=torch.float32, device='cuda')
         self.memory = OrderedDict()
+        self.persistent_index = {}
         self.generated = 0
         self.identity = {
             'version': 'lidar_camera_z_v2',
@@ -191,7 +192,18 @@ class LidarDepthProvider:
                 count = int(np.prod(shape))
                 valid = torch.from_numpy(np.unpackbits(data['valid'])[:count].reshape(shape).astype(bool))
         else:
-            depth, valid = self._generate(cam)
+            if cam.image_name in self.persistent_index:
+                stored = np.asarray(
+                    Image.open(self.persistent_index[cam.image_name]), dtype=np.uint16
+                )
+                decoded, decoded_valid = decode_depth_u16(
+                    stored, self.args.lidar_depth_min, self.args.lidar_depth_max
+                )
+                depth = torch.from_numpy(decoded)
+                valid = torch.from_numpy(decoded_valid)
+            else:
+                depth, valid = self._generate(cam)
+                self.generated += 1
             packed = np.packbits(valid.numpy().reshape(-1))
             temporary = self.root / (key + '.tmp.npz')
             np.savez_compressed(temporary,
@@ -199,7 +211,6 @@ class LidarDepthProvider:
                                 valid=packed,
                                 shape=np.asarray(depth.shape, dtype=np.int32))
             temporary.replace(path)
-            self.generated += 1
             if self.generated <= 5 or self.generated % 100 == 0:
                 values = depth[valid]
                 print('[LIDAR DEPTH]', json.dumps({
@@ -276,12 +287,45 @@ class LidarDepthProvider:
         rgb[~valid] = 0
         Image.fromarray(np.rint(rgb * 255).astype(np.uint8)).save(path)
 
+    def _reuse_verified_export(self, export):
+        summary_path = export / 'dataset_summary.json'
+        verification_path = export / 'verification.json'
+        manifest_path = export / 'depth_manifest.csv'
+        if not (summary_path.is_file() and verification_path.is_file() and manifest_path.is_file()):
+            raise FileExistsError(
+                f'Existing depth export is incomplete and will not be overwritten: {export}'
+            )
+        summary = json.loads(summary_path.read_text(encoding='utf-8'))
+        verification = json.loads(verification_path.read_text(encoding='utf-8'))
+        if summary.get('identity') != self.identity or verification.get('passed') is not True:
+            raise ValueError('Existing depth export identity or verification does not match this run')
+        index = {}
+        with manifest_path.open(newline='', encoding='utf-8') as handle:
+            for row in csv.DictReader(handle):
+                name = row['image_name']
+                candidate = (export / row['depth_u16']).resolve()
+                if not candidate.is_relative_to(export) or not candidate.is_file():
+                    raise FileNotFoundError(f'Invalid persisted depth path for {name}: {candidate}')
+                if name in index:
+                    raise ValueError(f'Duplicate image name in persisted depth manifest: {name}')
+                index[name] = candidate
+        if len(index) != summary.get('camera_count'):
+            raise ValueError('Persisted depth manifest count differs from dataset summary')
+        self.persistent_index = index
+        print('[LIDAR DEPTH DATASET REUSED]', json.dumps({
+            'path': str(export), 'camera_count': len(index),
+            'backprojection': summary.get('backprojection'),
+        }, indent=2), flush=True)
+        return summary
+
     def prepare_and_export(self, camera_groups, export_path):
-        """Create persistent PNG pseudo-GT and reject the dataset before training on failure."""
+        """Create or read a verified persistent pseudo-GT dataset before training."""
         from scipy.spatial import cKDTree
 
         export = Path(export_path).expanduser().resolve()
-        export.mkdir(parents=True, exist_ok=False)
+        if export.exists():
+            return self._reuse_verified_export(export)
+        export.mkdir(parents=True)
         tree = cKDTree(self.points_cpu)
         fields = [
             'role', 'camera_index', 'image_name', 'depth_u16', 'color_preview',
