@@ -21,16 +21,19 @@ def main(argv=None):
           'overrides':a.overrides,'growth':'OFF (v3 A/B)','opacity_reset':'OFF','depth_loss':'OFF',
           'hard_scale_bounds':a.scale_bounds,'seed':a.seed,'val_ellipsoids':a.val_ellipsoids,
           'ellipsoid_sigma':1,'ellipsoid_color':'SH DC + lighting','loss_csv':'every iteration',
-          'val_npz':a.val_npz,'checkpoint_interval':a.checkpoint_interval},indent=2),flush=True)
+          'val_npz':a.val_npz,'checkpoint_interval':a.checkpoint_interval,
+          'final_test':a.final_test,'final_test_iteration':150000,'test_worst_count':10},indent=2),flush=True)
     (out/'run_config.json').write_text(json.dumps(vars(a),indent=2),encoding='utf-8')
     from data_v3 import load_data
     from scene.gaussian_model import GaussianModel
     from gaussian_renderer import render
     from utils.loss_utils import l1_loss,ssim
-    from render_v3 import export_val
-    pcd,infos,cameras,val_cameras,centers,extent,identity=load_data(a)
+    from render_v3 import export_val,export_final_test
+    from experiment_summary_v3 import write_experiment_summary
+    pcd,infos,cameras,val_cameras,test_cameras,centers,extent,identity=load_data(a)
     (out/'run_manifest.json').write_text(json.dumps({'code':code,'inputs':identity,
-        'train_names':[c.image_name for c in cameras],'val_names':[c.image_name for c in val_cameras]},indent=2),encoding='utf-8')
+        'train_names':[c.image_name for c in cameras],'val_names':[c.image_name for c in val_cameras],
+        'test_names':[c.image_name for c in test_cameras]},indent=2),encoding='utf-8')
     g=GaussianModel(a.sh_degree,'default',False,-10.,False)
     g.create_from_pcd(pcd,infos,extent)
     ref_np=build_reference(pcd.points,centers,a)
@@ -64,6 +67,7 @@ def main(argv=None):
                    for kind in ('raw','weight','weighted')]
     loss_file=(out/'loss_log.csv').open('x',newline='',encoding='utf-8')
     loss_writer=csv.DictWriter(loss_file,fieldnames=csv_fields); loss_writer.writeheader()
+    final_test_summary=None; final_test_dir=None
     try:
         for iteration in range(first+1,a.iterations+1):
             g.update_learning_rate(iteration)
@@ -115,13 +119,21 @@ def main(argv=None):
                 g.save_ply(str(out/'point_cloud'/f'iteration_{iteration}'/'point_cloud.ply'))
                 save_checkpoint(out/'checkpoints'/f'iteration_{iteration}.pth',g,ref,state,sampler,
                     iteration,a,identity,code,prior_elapsed+time.monotonic()-started)
+        if a.final_test=='on' and iteration==150000:
+            final_test_summary,final_test_dir=export_final_test(a,iteration,test_cameras,g,pipe)
+            write_experiment_summary(a,iteration,final_test_summary,final_test_dir)
+        else:
+            print(f'[FINAL TEST] skipped: enabled={a.final_test} completed_iteration={iteration}; formal contract requires 150000',flush=True)
     except BaseException as error:
         (out/'failure.json').write_text(json.dumps({'iteration':iteration,'error':repr(error),
             'note':'Resume only a completed checkpoint; partial step is not saved as valid.'},indent=2),encoding='utf-8')
         raise
     finally:
         loss_file.close()
-    (out/'completed.json').write_text(json.dumps({'iteration':iteration,'count':len(g.get_xyz)}),encoding='utf-8')
+    (out/'completed.json').write_text(json.dumps({'iteration':iteration,'count':len(g.get_xyz),
+        'final_test_complete':final_test_summary is not None,
+        'final_test_dir':str(final_test_dir) if final_test_dir else None,
+        'summary':str(out/'experiment_summary.md') if final_test_summary is not None else None},indent=2),encoding='utf-8')
     print('[DONE]',out,flush=True)
 
 if __name__=='__main__': main()
