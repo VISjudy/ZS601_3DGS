@@ -67,7 +67,7 @@ def parse_args(argv=None):
     p.add_argument('--lidar_depth_cache', default='',
                    help='Local temporary cache directory; E requires it and it must not be on Drive')
     p.add_argument('--lidar_depth_export', default='',
-                   help='Brand-new Drive dataset folder for formal pseudo-GT PNGs and validation reports')
+                   help='New or already-verified Drive folder for pseudo-GT PNGs and validation reports')
     p.add_argument('--lambda_lidar_depth', type=float, default=.05)
     p.add_argument('--lidar_depth_start', type=int, default=1000)
     p.add_argument('--lidar_depth_warmup', type=int, default=4000)
