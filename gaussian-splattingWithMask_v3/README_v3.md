@@ -1,97 +1,57 @@
-# LiDAR A/B v3
+# ZS601 LiDAR 3DGS v3 — 实验 E
 
-基于 main `d45646bf3944599d0470e72eca7365dcd420191d` 的 `gaussian-splattingWithMask`。
-这是独立的 `gaussian-splattingWithMask_v3` 目录，包含 v3 训练入口及其实际依赖。`v3-ab` 分支根目录只保留本文件夹；main/v2 分支历史不变。原主基线工作目录在本地保留。
+实验 E 以 C 为基线：保留法向/扁平初始化、相机定向、五项几何损失、硬尺度上限和低 opacity 剪枝；关闭增密与 opacity reset；新增 LiDAR 伪深度监督。所有功能仍可用同名 `on/off` 参数独立覆盖，组合入口为 `--experiment E`。
 
-[打开 Colab](https://colab.research.google.com/github/VISjudy/ZS601_3DGS/blob/v3-ab/gaussian-splattingWithMask_v3/colab/ZS601_AB_v3.ipynb)
+[打开 E 组 Colab](https://colab.research.google.com/github/VISjudy/ZS601_3DGS/blob/v3-e/gaussian-splattingWithMask_v3/colab/ZS601_E_v3_150k.ipynb)
 
-进入本目录后执行以下命令。CUDA源码、GLM头文件和许可证随目录保留；不包含旧训练入口、旧notebook、GLM文档/测试和实验产物。不要使用v2-dev扩展。
+## 深度数据契约
 
-## 运行
+- 深度定义为相机坐标系 z，不是欧氏射线距离。
+- 世界点按 `camera = world @ R + T` 变换，使用当前居中 FoV 内参投影。
+- 同一像素只保留最小正 z，形成遮挡感知 z-buffer。
+- 非有限值、相机后方、图像外、过近、过远的点均无效。
+- 半径 1 的补洞要求至少 2 个原始 LiDAR 命中；局部深度跨度必须满足 `spread <= 0.02 + 0.02 * nearest_depth`，遮挡边缘不会跨层补值。
+- 伪 GT 保存为 16-bit PNG：0 是无效值，1–65535 线性映射 `lidar_depth_min..lidar_depth_max`。
+- 正式训练前会重新读取已保存 PNG，反投影为 3D，再计算到原始 LiDAR 的最近邻距离。任一相机 P95 超过默认 0.06 场景单位时，训练不会开始。
+- `depth_manifest.csv` 保存逐相机覆盖率、深度范围、PNG 量化误差和反投影误差；`dataset_summary.json` 与 `verification.json` 保存总体验收。
+- train/val/test 的原始深度 PNG 全部保留。为控制 Drive 空间，彩色预览只保存 val/test；训练缓存是 Colab 本地 NPZ，不写入 Drive。
+- 恢复训练可以传入既有的已验证深度目录。程序只读复用，不覆盖内容；身份或验证不匹配会停止。
 
-```bash
-python train_mask_v3.py --experiment A \
-  -s /content/dataset -m /content/drive/MyDrive/results/A_unique \
-  --point_cloud /content/dataset/ZS601_3cm_sample.las \
-  --cameras_file /content/dataset/sparse/cameras.txt \
-  --train_file /content/work/train_v3.txt \
-  --val_file /content/dataset/sparse/images-val10.txt \
-  --test_file /content/dataset/sparse/images_test.txt \
-  --iterations 30000 --position_lr_max_steps 30000
+## 深度损失
+
+预测深度使用现有可微高斯属性光栅化，计算 opacity 归一化的高斯中心 camera-z。监督像素必须同时满足：
+
+1. LiDAR 深度有效；
+2. 预测深度有限并位于配置范围；
+3. 渲染 alpha 不低于阈值；
+4. 位于图像有效 mask 内。
+
+每像素先计算相对深度误差 `(pred-gt)/gt` 的 Smooth L1，再乘距离权重：
+
+```
+weight = clamp((median_valid_depth / gt_depth) ** distance_power,
+               weight_min, weight_max)
 ```
 
-将 `--experiment A` 改成 `B` 开启五项几何约束。例如 `--experiment B --normal_loss off` 只关闭法向 loss。每个功能只有 `on/off` 一种覆盖表达；不接受旧 `--init_2d` / `--freeze_2d_z` 等混合控制，原入口仍支持原参数。
+默认 `distance_power=1`、范围 `[0.25, 4]`，因此近处几何得到更高权重，同时限制极端放大。最终深度项从第 1000 步开始，在 4000 步内升至 `lambda_lidar_depth=0.05`。这些参数均可独立修改。
 
-| 功能参数 | A | B |
-|---|---|---|
-| init_normal / init_flatten / orient_cameras / pruning | on | on |
-| surface_loss / tangent_loss / normal_loss / flatten_loss / size_loss | off | on |
+`loss_log.csv` 每步记录深度 loss 的 raw/weight/weighted、有效像素数、LiDAR 像素数、渲染覆盖率、平均目标深度、平均距离权重和状态。运行开头的 `[RUN]` 会打印 E preset 与所有覆盖参数；预生成阶段打印覆盖率和反投影 P95。
 
-增密、深度训练、opacity reset、硬厚度复位在这个 A/B 版本中固定关闭，不暴露无效开关。
-通过 `python train_mask_v3.py --help` 查看容差、权重和调度。所有默认几何权重只是起始配置，尚未通过云端实验调优。
+## 正式运行规则
 
-## 固定相机和输入安全
+- 训练 150000 步。
+- 固定 val 每 5000 步输出 RGB、法向、深度和 1σ 彩色椭球 PNG；不保存 geometry.npz。
+- checkpoint 和 PLY 只在 50000、100000、150000 步保存。
+- 第 150000 步对完整 test 集计算指标，保存 `test_metrics.csv`，并为 masked PSNR 最差的 10 个相机保存 RGB、1σ 椭球、深度和法向图。
+- 运行结束生成 `experiment_summary.md`，列出相对 baseline A 的功能差异、关键超参数、LiDAR 深度验证、最终 test 指标和结果分析。
+- 每次模型输出使用新目录。数据集、旧结果和旧 checkpoint 不覆盖。
 
-- 直接读取显式 txt，不回退 bin。验证 train 与 val/test 的图像名字互斥。
-- val 必须正好十个唯一相机，按给定文件顺序导出；不重新随机挑选。
-- 若输入 images.txt 为全量，运行 `prepare_v3.py` 从中排除给定 val/test，写入一个新的训练列表；不修改原始文件。不提供固定 val 时不会自动造一组替代。
-- 几何参考由当前 LAS/PLY 一次性建立：固定点 ID、局部平面、法向、间距、置信度。法向参考通过附近训练相机投票定向；投票不代表完成可见性判断。
-- LAS scale 不足以证明物理单位，默认 `--units scene`。确认以米为单位后改用 `--units meters`；该参数只声明单位，不缩放数据。
-- 现有主基线使用居中相机投影，因此 v3 拒绝明显非居中主点和未去畸变相机。
-- 不执行旧 preprocess.py 的删除步骤，也不使用旧 notebook 的清理命令。所有运行和恢复必须指定新输出目录。
+## 验证
 
-## 几何定义
-
-局部第三轴固定定义为厚度轴，法向为其旋转方向，不随最小尺度轴切换。
-surface 是固定局部平面距离的 Huber；tangent 是超出切向范围的惩罚；normal 为 `1-dot²`（不区分轴正负）；flatten/size 仅惩罚超过间距比例上限的尺度。surface/normal 使用平面置信度；尺寸限制覆盖低置信度点。关闭某项不会留下硬复位。
-
-原主基线四元数转换有漏赋值分支，v3 绕过该函数，以覆盖所有旋转分支的 SciPy 转换初始化。原文件不修改。
-
-剪枝在预热后，依据持续低 opacity、每个无重复采样 epoch 中的不同投影视角数决定，并限制单次比例。`radii>0` 只是视锥候选，不是遮挡或像素贡献真值。剪枝会同步几何引用、点 ID 和优化器动量；不删除磁盘文件。
-
-## 每1000步的输出
-
-默认在初始化、每1000步及最后一步输出十个固定视角，每个包括：
-
-- `valXX_rgb.png`：RGB。
-- `valXX_normal.png`：朝当前相机的相机系法向，RGB=(normal+1)/2，无效像素黑色。
-- `valXX_depth.png`：固定显示范围的灰度深度，默认0–15场景单位；不逐帧自动拉伸。
-- `valXX_geometry.npz`：float深度、法向、透明度和有效 mask。
-- `manifest.json`：相机名、R/T、显示范围、有效区PSNR及输出语义。
-
-深度使用额外属性通道计算 `sum(alpha*T*z_center)/sum(alpha*T)`，不是原 renderer 的未归一化逆深度，也不是无偏射线—表面深度。它只用于诊断，不加入 A/B loss。法向在合成前按视角定向，合成后归一化并过滤无效像素。颜色曝光变换不应用于几何通道。
-
-`train_log.jsonl` 每100步记录各 loss 开关状态/原始值/实际权重/加权值。
-`geometry_log.jsonl` 记录离面、偏移、角度、尺度分位数与超限比例。
-`prune_log.jsonl` 记录剪枝事件。尺寸是高斯标准差，不是查看器椭球直径。
-
-## 恢复和版本
-
-每1000步及结束保存完整 checkpoint 和 Gaussian PLY。恢复命令保持全部原参数，仅增加 `--resume <checkpoint>` 并使用新的 `-m`。不允许把旧模型 PLY 当作完整恢复。
-
-checkpoint 包括模型、优化器、曝光状态、几何参考、剪枝计数、相机采样栈、随机状态、输入身份及 v3 源码哈希。严格检查源码和配置一致；核心输入、训练与val图像及mask均计算内容SHA256，重新解压后的mtime变化不影响数据校验。
-
-发生非有限参数/梯度时停止并写 failure.json，不通过删坏点掩盖错误；使用最后完整 checkpoint 恢复。每个实验一个独立目录，所有原文件保留。
-
-## 本地验证与云端边界
+CPU 测试：
 
 ```bash
-python -m unittest -v test_geometry_v3
+python -m unittest -v test_geometry_v3 test_scale_bounds_v3 test_lidar_depth_v3
 ```
 
-CPU测试覆盖旋转、几何梯度、开关、相机定向和剪枝引用。Colab notebook 包含环境检查、主基线扩展构建、测试、200步冒烟和正式A/B入口。CPU测试通过不代表CUDA扩展编译、完整训练和恢复已经在Colab验证；请先运行冒烟单元。安装使用Colab自带torch，并记录实际版本，不盲目安装旧environment.yml。
-# 正式 A/B 输出补充（2026-09-10）
-
-`--val_ellipsoids on|off` 独立控制每次固定验证输出的 `valXX_ellipsoid.png`，默认开启。
-显示固定1σ、真实三轴尺度的实体椭球，DC颜色加方向光，opacity过滤阈值0.05。
-这是诊断可视化，不改变训练或模型参数；需要CuPy CUDA，避免Colab EGL落到CPU软件渲染。
-
-`loss_log.csv` 每步记录RGB L1/DSSIM、总损失、五项几何loss的raw/weight/weighted、点数和累计耗时，每个log_interval刷新。
-`val_metrics.csv` 每个验证时刻包含十个相机及MEAN行，记录有效像素PSNR/MAE；`ssim_zero_mask_full_image`是置零mask后的整图SSIM。
-恢复运行仍使用新目录，CSV只包含续跑段；不要将恢复段当作从第一步开始的完整日志。
-
-完整流程 notebook：`colab/ZS601_AB_v3_complete.ipynb`；代码固定提交，A/B各30000步，输入先复制到`/content`。
-
-## 云端存储策略
-
-默认 `--val_npz off`：验证仅保存 PNG 和 CSV，不生成 geometry.npz。`--checkpoint_interval 50000`：正式训练在50000、100000、150000步保存checkpoint及PLY，最终步总会保存（包括200步冒烟）。初始PLY和reference_v3.npz用于初始化记录，仍保留。已有产物不删除。运行中的旧进程不会自动加载新版源码，需单独完成可验证的切换。
+Colab notebook 还执行 L4 检查、CUDA 扩展构建、200 步 E 冒烟、深度 loss 生效检查及正式产物验收。CPU 测试不代表 CUDA 或正式训练已经完成。
