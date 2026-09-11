@@ -192,7 +192,8 @@ class LidarDepthProvider:
                 count = int(np.prod(shape))
                 valid = torch.from_numpy(np.unpackbits(data['valid'])[:count].reshape(shape).astype(bool))
         else:
-            if cam.image_name in self.persistent_index:
+            loaded_persistent = cam.image_name in self.persistent_index
+            if loaded_persistent:
                 stored = np.asarray(
                     Image.open(self.persistent_index[cam.image_name]), dtype=np.uint16
                 )
@@ -211,7 +212,9 @@ class LidarDepthProvider:
                                 valid=packed,
                                 shape=np.asarray(depth.shape, dtype=np.int32))
             temporary.replace(path)
-            if self.generated <= 5 or self.generated % 100 == 0:
+            if (not loaded_persistent) and (
+                self.generated <= 5 or self.generated % 100 == 0
+            ):
                 values = depth[valid]
                 print('[LIDAR DEPTH]', json.dumps({
                     'generated': self.generated,
