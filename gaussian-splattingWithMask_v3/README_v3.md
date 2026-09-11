@@ -103,7 +103,7 @@ CPU测试覆盖旋转、几何梯度、开关、相机定向和剪枝引用。Co
 
 D 在 10000–100000 步、每 10000 步检查一次候选。候选必须同时满足：屏幕空间位置梯度达到阈值、opacity 达标、被足够多相机视锥覆盖、LiDAR 平面置信度有效、中心位于局部平面容差内且未超过原锚点的切向范围。每次最多新增当前点数的 1%，总点数最多为初始点数的 1.25 倍。
 
-子高斯中心沿固定 LiDAR 平面的切向产生，再投影回该平面；它继承父高斯外观、旋转和 LiDAR 引用，尺度缩小到父高斯的 0.7 倍并立即受 C 的 XY/厚度上限约束。新增时同步优化器状态、几何 reference、剪枝计数和 checkpoint 状态。`surface_densify_log.jsonl` 记录每次候选数、新增数、增长预算和平均梯度。
+子高斯中心沿固定 LiDAR 平面的切向产生，再投影回该平面；它继承父高斯外观、旋转和 LiDAR 引用，尺度缩小到父高斯的 0.7 倍并立即受 C 的 XY/厚度上限约束。父子按 `1-(1-q)^2=p` 分配原父高斯的 alpha 质量并清理父 opacity 的 Adam 动量，避免每次复制直接增加约 50% 局部不透明度。候选使用最近一个完整无重复采样 epoch 的视角数，每个原始 LiDAR seed 默认最多生成2个子高斯。新增时同步优化器状态、几何 reference、剪枝计数和 checkpoint 状态。`surface_densify_log.jsonl` 记录每次候选数、新增数、增长预算和平均梯度。
 
 各项参数均可单独覆盖，例如 `--experiment D --surface_densify off` 应退化到 C。D 的关键新增参数为：
 
@@ -113,6 +113,7 @@ D 在 10000–100000 步、每 10000 步检查一次候选。候选必须同时�
 - `--surface_densify_child_scale 0.7`
 - `--surface_densify_max_fraction 0.01`
 - `--surface_densify_max_points_ratio 1.25`
+- `--surface_densify_max_children_per_seed 2`
 
 ## 15万步正式实验验收规则
 
