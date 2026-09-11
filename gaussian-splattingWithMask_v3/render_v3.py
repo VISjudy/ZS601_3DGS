@@ -139,8 +139,9 @@ def export_final_test(a,iteration,cameras,g,pipe):
     numeric=('masked_psnr','masked_mae','ssim_zero_mask_full_image','valid_pixel_fraction')
     aggregates={}
     for kind,fn in (('MEAN',np.mean),('MEDIAN',np.median),('MIN',np.min),('MAX',np.max)):
-        row={'iteration':iteration,'camera_index':-1,'image_name':kind,'count':len(g.get_xyz)}
+        row={'iteration':iteration,'camera_index':-1,'image_name':kind}
         row.update({k:float(fn([r[k] for r in records])) for k in numeric})
+        row['count']=len(g.get_xyz)
         append_csv(metric_path,row); aggregates[kind.lower()]=row
     worst=rank_worst_test(records,10)
     ellipsoids=None
