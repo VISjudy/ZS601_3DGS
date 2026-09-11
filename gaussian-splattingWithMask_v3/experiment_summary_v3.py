@@ -2,6 +2,7 @@
 from pathlib import Path
 import csv
 import json
+from arguments_v3 import preset_features
 
 FEATURES=('init_normal','init_flatten','orient_cameras','surface_loss','tangent_loss',
           'normal_loss','flatten_loss','size_loss','pruning','scale_bounds','surface_densify')
@@ -56,7 +57,10 @@ def write_experiment_summary(a,iteration,test_summary,test_dir):
     active={k:bool(getattr(a,k)) for k in FEATURES}
     baseline=_baseline_artifacts(a.baseline_result)
     baseline_cfg=baseline_summary=None
-    feature_delta={}; parameter_delta={}
+    baseline_features=preset_features('A')
+    feature_delta={k:(baseline_features[k],active[k]) for k in FEATURES
+                   if baseline_features[k]!=active[k]}
+    parameter_delta={}
     if baseline:
         _,baseline_cfg,baseline_summary=baseline
         if baseline_summary.get('comparison_identity')!=test_summary.get('comparison_identity'):
@@ -105,7 +109,7 @@ def write_experiment_summary(a,iteration,test_summary,test_dir):
         lines.append(f'| {key} | {_fmt(value)} | {_fmt(default)} | {note} |')
     behavior='LiDAR贴面受控增密开启' if a.surface_densify else '增密关闭'
     lines += ['',
-        f'固定运行行为：{behavior}；标准densify_and_prune和opacity reset关闭；checkpoint/PLY每50000步；固定val每1000步。','',
+        f'固定运行行为：{behavior}；标准densify_and_prune和opacity reset关闭；checkpoint/PLY每50000步；固定val每{a.val_interval}步。','',
         '## 最终 test 结果','',
         '| 指标 | mean | median | min | max |','|---|---:|---:|---:|---:|']
     for key in ('masked_psnr','masked_mae','ssim_zero_mask_full_image'):
