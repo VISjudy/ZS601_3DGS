@@ -34,9 +34,26 @@ def main(argv=None):
     pcd,infos,cameras,val_cameras,test_cameras,centers,extent,identity=load_data(a)
     from lidar_depth_v3 import LidarDepthProvider,lidar_depth_term
     depth_provider=LidarDepthProvider(pcd.points,a,identity) if a.lidar_depth_loss else None
-    (out/'run_manifest.json').write_text(json.dumps({'code':code,'inputs':identity,
-        'train_names':[c.image_name for c in cameras],'val_names':[c.image_name for c in val_cameras],
-        'test_names':[c.image_name for c in test_cameras]},indent=2),encoding='utf-8')
+    depth_dataset=None
+    if depth_provider is not None and a.lidar_depth_export:
+        try:
+            depth_dataset=depth_provider.prepare_and_export(
+                {'train':cameras,'val':val_cameras,'test':test_cameras},
+                a.lidar_depth_export)
+        except BaseException as error:
+            (out/'failure.json').write_text(json.dumps({
+                'iteration':0,'stage':'lidar_depth_preflight','error':repr(error),
+                'note':'Training did not start. Use a new export folder after fixing the input or thresholds.'
+            },indent=2),encoding='utf-8')
+            raise
+    run_manifest={'code':code,'inputs':identity,
+        'train_names':[c.image_name for c in cameras],
+        'val_names':[c.image_name for c in val_cameras],
+        'test_names':[c.image_name for c in test_cameras],
+        'lidar_depth_dataset':{
+            'path':str(Path(a.lidar_depth_export).expanduser().resolve()) if a.lidar_depth_export else None,
+            'summary':depth_dataset}}
+    (out/'run_manifest.json').write_text(json.dumps(run_manifest,indent=2),encoding='utf-8')
     g=GaussianModel(a.sh_degree,'default',False,-10.,False)
     g.create_from_pcd(pcd,infos,extent)
     ref_np=build_reference(pcd.points,centers,a)
@@ -69,7 +86,8 @@ def main(argv=None):
     csv_fields += [name+'_'+kind for name in ('surface','tangent','normal','flatten','size','lidar_depth')
                    for kind in ('raw','weight','weighted')]
     csv_fields += ['lidar_depth_valid_pixels','lidar_depth_lidar_pixels',
-                   'lidar_depth_rendered_fraction','lidar_depth_state']
+                   'lidar_depth_rendered_fraction','lidar_depth_mean_target_depth',
+                   'lidar_depth_distance_weight_mean','lidar_depth_state']
     loss_file=(out/'loss_log.csv').open('x',newline='',encoding='utf-8')
     loss_writer=csv.DictWriter(loss_file,fieldnames=csv_fields); loss_writer.writeheader()
     final_test_summary=None; final_test_dir=None
@@ -118,6 +136,8 @@ def main(argv=None):
             csv_record.update({'lidar_depth_valid_pixels':depth_stats['valid_pixels'],
                 'lidar_depth_lidar_pixels':depth_stats['lidar_pixels'],
                 'lidar_depth_rendered_fraction':depth_stats['rendered_fraction'],
+                'lidar_depth_mean_target_depth':depth_stats['mean_target_depth'],
+                'lidar_depth_distance_weight_mean':depth_stats['distance_weight_mean'],
                 'lidar_depth_state':depth_stats['state']})
             loss_writer.writerow(csv_record)
             if iteration==1 or iteration%a.log_interval==0:
@@ -132,7 +152,8 @@ def main(argv=None):
                 save_checkpoint(out/'checkpoints'/f'iteration_{iteration}.pth',g,ref,state,sampler,
                     iteration,a,identity,code,prior_elapsed+time.monotonic()-started)
         if a.final_test=='on' and iteration==150000:
-            final_test_summary,final_test_dir=export_final_test(a,iteration,test_cameras,g,pipe)
+            final_test_summary,final_test_dir=export_final_test(
+                a,iteration,test_cameras,g,pipe,identity)
             write_experiment_summary(a,iteration,final_test_summary,final_test_dir)
         else:
             print(f'[FINAL TEST] skipped: enabled={a.final_test} completed_iteration={iteration}; formal contract requires 150000',flush=True)
@@ -145,7 +166,8 @@ def main(argv=None):
     (out/'completed.json').write_text(json.dumps({'iteration':iteration,'count':len(g.get_xyz),
         'final_test_complete':final_test_summary is not None,
         'final_test_dir':str(final_test_dir) if final_test_dir else None,
-        'summary':str(out/'experiment_summary.md') if final_test_summary is not None else None},indent=2),encoding='utf-8')
+        'summary':str(out/'experiment_summary.md') if final_test_summary is not None else None,
+        'lidar_depth_dataset':run_manifest['lidar_depth_dataset']},indent=2),encoding='utf-8')
     print('[DONE]',out,flush=True)
 
 if __name__=='__main__': main()
