@@ -54,6 +54,7 @@ def parse_args(argv=None):
     p.add_argument('--surface_densify_max_points_ratio', type=float, default=1.25)
     p.add_argument('--surface_densify_min_opacity', type=float, default=.01)
     p.add_argument('--surface_densify_min_views', type=int, default=20)
+    p.add_argument('--surface_densify_max_children_per_seed', type=int, default=2)
     p.add_argument('--prune_start', type=int, default=3000)
     p.add_argument('--prune_interval', type=int, default=1000)
     p.add_argument('--prune_opacity', type=float, default=.005)
@@ -98,7 +99,7 @@ def parse_args(argv=None):
               'thickness_ratio','size_ratio','depth_visual_max','prune_patience','prune_min_views','lazy_cache',
               'surface_densify_interval','surface_densify_plane_ratio','surface_densify_offset_ratio',
               'surface_densify_child_scale','surface_densify_max_fraction','surface_densify_max_points_ratio',
-              'surface_densify_min_opacity','surface_densify_min_views'):
+              'surface_densify_min_opacity','surface_densify_min_views','surface_densify_max_children_per_seed'):
         if getattr(a,n)<=0: p.error(n+' must be positive')
     if a.knn<3 or not 0<a.planarity_min<1 or not 0<a.prune_max_fraction<1:
         p.error('invalid neighborhood, confidence or pruning fraction')
