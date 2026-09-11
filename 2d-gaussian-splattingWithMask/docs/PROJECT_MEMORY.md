@@ -36,6 +36,24 @@ Failure / current blocker:
 - Therefore runtime selection, Drive authorization, and cell execution still require user interaction in the opened Colab tab.
 - Do not record smoke success until the notebook prints fresh `nvidia-smi`, builds both CUDA extensions, runs 200 training steps, and saves/read-backs `verification.json`.
 
+
+### 2026-09-11: User confirmed Colab page connection, MCP still limited
+
+Observation:
+- User reported the Colab page is already connected and provided the exact notebook URL with scroll anchor.
+- The URL was opened again in Chrome: `https://colab.research.google.com/github/VISjudy/ZS601_3DGS/blob/2dgs-zs601-mask-init/2d-gaussian-splattingWithMask/colab/ZS601_2DGS_ProPlus_smoke.ipynb#scrollTo=xiJDLl5lF9BO`.
+
+MCP status:
+- `mcp__colab.open_colab_browser_connection` returned true, so the MCP handshake path was used.
+- Tool discovery still exposed only `open_colab_browser_connection`; no cell execution, cell output readback, runtime selection, or Drive mount execution tools were available to Codex.
+- Practical conclusion: in this environment the Colab MCP is not sufficient for automatic experiment execution yet; it is only proving a browser connection.
+
+Required proof before marking smoke success:
+- Fresh notebook output for `nvidia-smi`.
+- Successful CUDA extension build/import.
+- 200-step smoke training completed.
+- Drive `verification.json` saved and read back.
+
 ## Failure / risk log
 
 ### Browser and authorization boundary
