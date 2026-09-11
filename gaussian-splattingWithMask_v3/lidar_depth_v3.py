@@ -696,7 +696,7 @@ def lidar_depth_term(cam, g, pipe, provider, args, iteration):
         # raw retains the common v3 meaning: the optimized term before lambda.
         'raw': float(distance_weighted_raw.detach()),
         'weight': weight,
-        'weighted': float(raw.detach()) * weight,
+        'weighted': float(distance_weighted_raw.detach()) * weight,
         'valid_pixels': count,
         'lidar_pixels': lidar_count,
         'rendered_fraction': fraction,
