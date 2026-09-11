@@ -29,6 +29,46 @@ def camera_to_world_np(points, rotation, translation):
     return (np.asarray(points, dtype=np.float64) - np.asarray(translation, dtype=np.float64)) @ np.asarray(rotation, dtype=np.float64).T
 
 
+def project_camera_np(camera, fx, fy, cx, cy):
+    """Map camera points to pixels whose centers are (u+0.5,v+0.5)."""
+    camera = np.asarray(camera, dtype=np.float64)
+    u = np.floor(fx * camera[:, 0] / camera[:, 2] + cx).astype(np.int64)
+    v = np.floor(fy * camera[:, 1] / camera[:, 2] + cy).astype(np.int64)
+    return u, v
+
+
+def pixels_to_camera_np(u, v, z, fx, fy, cx, cy):
+    """Backproject integer pixels through their centers."""
+    return np.stack((
+        (np.asarray(u) + .5 - cx) * z / fx,
+        (np.asarray(v) + .5 - cy) * z / fy,
+        z,
+    ), axis=1)
+
+
+def file_sha256(path):
+    digest = hashlib.sha256()
+    with open(path, 'rb') as handle:
+        for block in iter(lambda: handle.read(1024 * 1024), b''):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def read_depth_png(path, expected_shape=None):
+    with Image.open(path) as image:
+        if image.mode not in ('I;16', 'I'):
+            raise ValueError(f'Expected 16-bit grayscale depth PNG, got {image.mode}: {path}')
+        raw = np.asarray(image)
+    if raw.size and (raw.min() < 0 or raw.max() > 65535):
+        raise ValueError(f'Depth PNG contains values outside uint16: {path}')
+    encoded = raw.astype(np.uint16)
+    if expected_shape is not None and encoded.shape != tuple(expected_shape):
+        raise ValueError(
+            f'Depth PNG shape {encoded.shape} != expected {tuple(expected_shape)}: {path}'
+        )
+    return encoded
+
+
 def scatter_zbuffer_min(zbuffer, pixel_index, camera_z):
     """Update a flat z-buffer; multiple points at one pixel keep the nearest z."""
     zbuffer.scatter_reduce_(0, pixel_index, camera_z, reduce='amin', include_self=True)
@@ -96,8 +136,7 @@ class LidarDepthProvider:
         self.generated = 0
         self.identity = {
             'version': 'lidar_camera_z_v3',
-            'point_cloud': input_identity['point_cloud'],
-            'cameras_file': input_identity['cameras_file'],
+            'inputs': dict(sorted(input_identity.items())),
             'depth_min': args.lidar_depth_min,
             'depth_max': args.lidar_depth_max,
             'projection': 'camera = world @ R + T; centered FoV intrinsics; rounded pixel',
@@ -164,8 +203,8 @@ class LidarDepthProvider:
             if not valid.any():
                 continue
             camera, z = camera[valid], z[valid]
-            u = torch.round(fx * camera[:, 0] / z + cx).to(torch.long)
-            v = torch.round(fy * camera[:, 1] / z + cy).to(torch.long)
+            u = torch.floor(fx * camera[:, 0] / z + cx).to(torch.long)
+            v = torch.floor(fy * camera[:, 1] / z + cy).to(torch.long)
             inside = (u >= 0) & (u < width) & (v >= 0) & (v < height)
             if inside.any():
                 scatter_zbuffer_min(zbuffer, v[inside] * width + u[inside], z[inside])
@@ -193,10 +232,13 @@ class LidarDepthProvider:
         path = self.root / (key + '_depth_u16.png')
         generated_now = False
         if path.is_file():
-            encoded = np.asarray(Image.open(path), dtype=np.uint16)
+            encoded = read_depth_png(
+                path, (int(cam.image_height), int(cam.image_width))
+            )
         elif cam.image_name in self.persistent_index:
-            encoded = np.asarray(
-                Image.open(self.persistent_index[cam.image_name]), dtype=np.uint16
+            encoded = read_depth_png(
+                self.persistent_index[cam.image_name],
+                (int(cam.image_height), int(cam.image_width)),
             )
         else:
             raw_depth, raw_valid = self._generate(cam)
@@ -248,18 +290,32 @@ class LidarDepthProvider:
         u = pixel[:, 1].numpy().astype(np.float64)
         z = depth[pixel[:, 0], pixel[:, 1]].numpy().astype(np.float64)
         fx, fy, cx, cy = camera_intrinsics(cam)
-        camera = np.stack(((u - cx) * z / fx, (v - cy) * z / fy, z), axis=1)
+        camera = pixels_to_camera_np(u, v, z, fx, fy, cx, cy)
         world = camera_to_world_np(camera, cam.R, cam.T)
-        distance, _ = tree.query(world, k=1, workers=-1)
+        distance, source_index = tree.query(world, k=1, workers=-1)
+        source_camera = world_to_camera_np(
+            self.points_cpu[source_index], cam.R, cam.T
+        )
+        source_u, source_v = project_camera_np(source_camera, fx, fy, cx, cy)
+        reprojection = np.maximum(np.abs(source_u - u), np.abs(source_v - v))
+        source_depth_error = np.abs(source_camera[:, 2] - z)
         tolerance = self.args.lidar_depth_backproject_tolerance
+        quantile = self.args.lidar_depth_backproject_quantile
+        pixel_tolerance = self.args.lidar_depth_reprojection_tolerance_px
         return {
             'samples': int(len(distance)),
             'mean': float(np.mean(distance)),
             'median': float(np.median(distance)),
             'p95': float(np.quantile(distance, .95)),
+            'quantile': quantile,
+            'quantile_distance': float(np.quantile(distance, quantile)),
             'max': float(np.max(distance)),
             'pass_fraction': float(np.mean(distance <= tolerance)),
             'tolerance': tolerance,
+            'reprojection_quantile_px': float(np.quantile(reprojection, quantile)),
+            'reprojection_pass_fraction': float(np.mean(reprojection <= pixel_tolerance)),
+            'reprojection_tolerance_px': pixel_tolerance,
+            'source_depth_error_quantile': float(np.quantile(source_depth_error, quantile)),
         }
 
     def _save_and_reload_depth(self, path, depth, valid):
@@ -268,7 +324,7 @@ class LidarDepthProvider:
             self.args.lidar_depth_min, self.args.lidar_depth_max,
         )
         Image.fromarray(encoded).save(path)
-        stored = np.asarray(Image.open(path), dtype=np.uint16)
+        stored = read_depth_png(path, depth.shape)
         decoded, decoded_valid = decode_depth_u16(
             stored, self.args.lidar_depth_min, self.args.lidar_depth_max,
         )
