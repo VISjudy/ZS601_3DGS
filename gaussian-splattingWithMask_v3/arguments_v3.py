@@ -6,6 +6,13 @@ FEATURES = ('init_normal', 'init_flatten', 'orient_cameras', 'surface_loss',
             'surface_densify')
 LOSSES = ('surface', 'tangent', 'normal', 'flatten', 'size')
 
+def preset_features(experiment):
+    enabled={'init_normal','init_flatten','orient_cameras','pruning'}
+    if experiment in ('B','C','D'): enabled.update(LOSSES)
+    if experiment in ('C','D'): enabled.add('scale_bounds')
+    if experiment=='D': enabled.add('surface_densify')
+    return {name:name in enabled for name in FEATURES}
+
 def parse_args(argv=None):
     from arguments import OptimizationParams, PipelineParams
     p = argparse.ArgumentParser(description='LiDAR A/B v3 (fixed population, optional pruning)')
@@ -84,12 +91,9 @@ def parse_args(argv=None):
     if a.final_test=='on' and a.iterations==150000 and not a.test_file:
         p.error('--test_file is required when --final_test on for a 150000-iteration formal run')
     a.overrides = {n:getattr(a,n) for n in FEATURES if getattr(a,n) is not None}
-    preset_on={'init_normal','init_flatten','orient_cameras','pruning'}
-    if a.experiment in ('B','C','D'): preset_on.update(LOSSES)
-    if a.experiment in ('C','D'): preset_on.add('scale_bounds')
-    if a.experiment=='D': preset_on.add('surface_densify')
+    preset=preset_features(a.experiment)
     for n in FEATURES:
-        default=n in preset_on
+        default=preset[n]
         setattr(a,n, default if getattr(a,n) is None else getattr(a,n)=='on')
     for n in LOSSES:
         if getattr(a,'lambda_'+n)<0 or getattr(a,n+'_start')<0 or getattr(a,n+'_warmup')<0:
