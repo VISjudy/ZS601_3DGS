@@ -24,7 +24,7 @@ class SurfaceDensifyTests(unittest.TestCase):
 
     def test_candidate_requires_reliable_near_surface_point(self):
         xyz=torch.tensor([[0.,0.,.1],[1.,0.,0.],[2.,0.,.5]])
-        state={'recent_epoch_views':torch.tensor([20,20,20]),
+        state={'recent_epoch_views':torch.tensor([20,20,20]),'epoch_views':torch.zeros(3,dtype=torch.int32),
                'is_seed':torch.ones(3,dtype=torch.bool),'densify_count':torch.zeros(3,dtype=torch.int32)}
         mask=select_surface_candidates(xyz,torch.full((3,1),.1),self.reference(),state,
                                        torch.tensor([.3,.3,.3]),self.args())
