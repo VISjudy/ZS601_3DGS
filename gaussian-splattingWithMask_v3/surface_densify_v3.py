@@ -31,8 +31,9 @@ def select_surface_candidates(xyz,opacity,reference,state,gradient,a):
     plane_distance=((xyz-reference['plane'])*n).sum(-1).abs()
     delta=xyz-reference['anchor']
     tangent=torch.linalg.vector_norm(delta-(delta*n).sum(-1,keepdim=True)*n,dim=-1)
-    views=torch.maximum(state['epoch_views'],state['max_epoch_views'])
-    return (torch.isfinite(gradient)&(gradient>=a.surface_densify_grad_threshold)&
+    views=state['recent_epoch_views']
+    seed_ok=state['is_seed']&(state['densify_count']<a.surface_densify_max_children_per_seed)
+    return (seed_ok&torch.isfinite(gradient)&(gradient>=a.surface_densify_grad_threshold)&
             (opacity.flatten()>=a.surface_densify_min_opacity)&
             (conf>0)&(views>=a.surface_densify_min_views)&
             (plane_distance<=a.surface_densify_plane_ratio*h)&
@@ -55,7 +56,8 @@ def make_surface_children(xyz,scales,rotation,opacity,reference,state,selected,a
     child_scale=scales[selected]*a.surface_densify_child_scale
     child_scale[:,:2]=torch.minimum(child_scale[:,:2],a.size_ratio*h[:,None])
     child_scale[:,2]=torch.minimum(child_scale[:,2],a.thickness_ratio*h)
-    child_opacity=(opacity[selected]*.5).clamp(1e-4,.1)
+    # Split alpha mass between parent and child: 1-(1-q)^2=p for coincident layers.
+    child_opacity=(1-torch.sqrt((1-opacity[selected]).clamp_min(1e-6))).clamp(1e-4,1-1e-4)
     child_opacity=torch.log(child_opacity/(1-child_opacity))
     return child_xyz,child_scale.clamp_min(torch.finfo(scales.dtype).tiny).log(),rotation[selected],child_opacity
 
@@ -70,7 +72,7 @@ def surface_densify(g,reference,state,a,iteration):
     gradient=(g.xyz_gradient_accum/g.denom.clamp_min(1)).flatten()
     eligible=select_surface_candidates(g.get_xyz,g.get_opacity,reference,state,gradient,a)
     candidates=eligible.nonzero().flatten()
-    initial_count=int(reference['source_id'].max().item())+1 if len(reference['source_id']) else 0
+    initial_count=int(state['initial_count'].item())
     max_points=max(initial_count,int(math.floor(initial_count*a.surface_densify_max_points_ratio)))
     budget=max(0,max_points-len(g.get_xyz))
     event_cap=max(1,int(math.floor(len(g.get_xyz)*a.surface_densify_max_fraction)))
@@ -84,6 +86,12 @@ def surface_densify(g,reference,state,a,iteration):
     selected=candidates[order[:take]]
     child_xyz,child_scaling,child_rotation,child_opacity=make_surface_children(
         g.get_xyz,g.get_scaling,g._rotation,g.get_opacity,reference,state,selected,a)
+    # Parent and child share the opacity mass; clear the parent's stale outward Adam momentum.
+    g._opacity[selected].copy_(child_opacity)
+    opacity_state=g.optimizer.state.get(g._opacity,{})
+    for name in ('exp_avg','exp_avg_sq','max_exp_avg_sq'):
+        value=opacity_state.get(name)
+        if isinstance(value,torch.Tensor): value[selected]=0
     tensors={'xyz':child_xyz,'f_dc':g._features_dc[selected],
              'f_rest':g._features_rest[selected],'opacity':child_opacity,
              'scaling':child_scaling,'rotation':child_rotation}
@@ -94,8 +102,15 @@ def surface_densify(g,reference,state,a,iteration):
     g._scaling=optimized['scaling']; g._rotation=optimized['rotation']
     reference={k:torch.cat((v,v[selected]),dim=0) for k,v in reference.items()}
     state['densify_count'][selected]+=1
-    state={k:torch.cat((v,torch.zeros(take,dtype=v.dtype,device=v.device)),dim=0)
-           for k,v in state.items()}
+    old_count=len(g.get_xyz)-take
+    grown={}
+    for k,v in state.items():
+        if v.ndim>0 and len(v)==old_count:
+            child=torch.zeros(take,dtype=v.dtype,device=v.device)
+            grown[k]=torch.cat((v,child),dim=0)
+        else:
+            grown[k]=v
+    state=grown
     g.xyz_gradient_accum=torch.cat((old_accum,torch.zeros((take,1),device=old_accum.device)),dim=0)
     g.denom=torch.cat((old_denom,torch.zeros((take,1),device=old_denom.device)),dim=0)
     g.max_radii2D=torch.cat((old_radii,torch.zeros(take,device=old_radii.device)),dim=0)
@@ -103,5 +118,7 @@ def surface_densify(g,reference,state,a,iteration):
     return reference,state,{'iteration':iteration,'eligible':len(candidates),'added':take,
         'count':len(g.get_xyz),'budget_remaining':max_points-len(g.get_xyz),
         'mean_selected_gradient':float(gradient[selected].mean()),
+        'seed_sources_used':int((state['densify_count'][:initial_count]>0).sum()),
+        'seed_source_coverage':float((state['densify_count'][:initial_count]>0).float().mean()),
         'offset_ratio':a.surface_densify_offset_ratio,
         'criterion':'screen gradient + opacity + views + reliable LiDAR plane + surface/tangent gates'}
