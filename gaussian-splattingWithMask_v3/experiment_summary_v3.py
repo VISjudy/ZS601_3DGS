@@ -96,8 +96,10 @@ def write_experiment_summary(a,iteration,test_summary,test_dir):
             lines.append('- 数值超参数变化：'+', '.join(
                 f'{k}={_fmt(v[0])}→{_fmt(v[1])}' for k,v in parameter_delta.items())+'。')
     else:
-        lines.append('- 未提供 baseline_result；本报告不猜测历史baseline配置，也不生成数值差。')
-        lines.append('- D preset相对C只新增surface_densify；实际跨实验差异应以各自run_config.json复核。')
+        lines.append('- 未提供 baseline_result；功能差异按当前代码的A preset计算，不生成指标数值差。')
+        for key,(before,after) in feature_delta.items():
+            lines.append(f'- 功能 {key}：{str(before).lower()} → {str(after).lower()}。')
+        lines.append('- 实际跨实验比较仍需复核各输出目录的run_config.json。')
     lines += ['','当前启用功能：'+', '.join(k for k,v in active.items() if v)+'。','',
               '## 关键超参数','',
               '| 参数 | 本实验 | 原始默认值 | 说明 |','|---|---:|---:|---|']
