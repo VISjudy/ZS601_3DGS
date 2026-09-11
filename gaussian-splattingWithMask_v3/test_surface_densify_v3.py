@@ -10,6 +10,7 @@ class SurfaceDensifyTests(unittest.TestCase):
     def args(self):
         return SimpleNamespace(surface_densify_grad_threshold=.2,
             surface_densify_min_opacity=.01,surface_densify_min_views=20,
+            surface_densify_max_children_per_seed=2,
             surface_densify_plane_ratio=.25,tangent_radius_ratio=1.,
             surface_densify_offset_ratio=.35,surface_densify_child_scale=.7,
             size_ratio=2.,thickness_ratio=.1)
@@ -23,7 +24,8 @@ class SurfaceDensifyTests(unittest.TestCase):
 
     def test_candidate_requires_reliable_near_surface_point(self):
         xyz=torch.tensor([[0.,0.,.1],[1.,0.,0.],[2.,0.,.5]])
-        state={'epoch_views':torch.tensor([20,20,20]),'max_epoch_views':torch.zeros(3,dtype=torch.long)}
+        state={'recent_epoch_views':torch.tensor([20,20,20]),
+               'is_seed':torch.ones(3,dtype=torch.bool),'densify_count':torch.zeros(3,dtype=torch.int32)}
         mask=select_surface_candidates(xyz,torch.full((3,1),.1),self.reference(),state,
                                        torch.tensor([.3,.3,.3]),self.args())
         self.assertEqual(mask.tolist(),[True,False,False])
@@ -40,7 +42,8 @@ class SurfaceDensifyTests(unittest.TestCase):
         active=log_scale.exp()
         self.assertTrue(bool((active[:,:2]<=2.).all()))
         self.assertTrue(bool((active[:,2]<=.1).all()))
-        self.assertTrue(bool((torch.sigmoid(child_opacity)<=.1).all()))
+        q=torch.sigmoid(child_opacity)
+        self.assertTrue(torch.allclose(1-(1-q).square(),torch.full((2,1),.2),atol=1e-6))
         self.assertTrue(torch.equal(child_rotation,rotation[[0,2]]))
 
     def test_worst_ranking_is_deterministic(self):
