@@ -1,16 +1,16 @@
-# LiDAR A/B v3
+# LiDAR D v3
 
 基于 main `d45646bf3944599d0470e72eca7365dcd420191d` 的 `gaussian-splattingWithMask`。
 这是独立的 `gaussian-splattingWithMask_v3` 目录，包含 v3 训练入口及其实际依赖。`v3-ab` 分支根目录只保留本文件夹；main/v2 分支历史不变。原主基线工作目录在本地保留。
 
-[打开 Colab](https://colab.research.google.com/github/VISjudy/ZS601_3DGS/blob/v3-ab/gaussian-splattingWithMask_v3/colab/ZS601_AB_v3.ipynb)
+[打开 Colab](https://colab.research.google.com/github/VISjudy/ZS601_3DGS/blob/v3-ab/gaussian-splattingWithMask_v3/colab/ZS601_D_v3_150k.ipynb)
 
 进入本目录后执行以下命令。CUDA源码、GLM头文件和许可证随目录保留；不包含旧训练入口、旧notebook、GLM文档/测试和实验产物。不要使用v2-dev扩展。
 
 ## 运行
 
 ```bash
-python train_mask_v3.py --experiment A \
+python train_mask_v3.py --experiment D \
   -s /content/dataset -m /content/drive/MyDrive/results/A_unique \
   --point_cloud /content/dataset/ZS601_3cm_sample.las \
   --cameras_file /content/dataset/sparse/cameras.txt \
@@ -20,14 +20,15 @@ python train_mask_v3.py --experiment A \
   --iterations 150000 --position_lr_max_steps 150000
 ```
 
-将 `--experiment A` 改成 `B` 开启五项几何约束。例如 `--experiment B --normal_loss off` 只关闭法向 loss。每个功能只有 `on/off` 一种覆盖表达；不接受旧 `--init_2d` / `--freeze_2d_z` 等混合控制，原入口仍支持原参数。
+`--experiment D` 组合开启初始化、五项几何约束、尺度上限和贴面受控增密。例如 `--experiment D --surface_densify off` 单独关闭增密并退化为C。每个功能只有 `on/off` 一种覆盖表达；不接受旧 `--init_2d` / `--freeze_2d_z` 等混合控制。
 
-| 功能参数 | A | B |
+| 功能参数 | baseline A | D |
 |---|---|---|
 | init_normal / init_flatten / orient_cameras / pruning | on | on |
 | surface_loss / tangent_loss / normal_loss / flatten_loss / size_loss | off | on |
+| scale_bounds / surface_densify | off | on |
 
-增密、深度训练、opacity reset、硬厚度复位在这个 A/B 版本中固定关闭，不暴露无效开关。
+标准增密、深度训练、opacity reset和硬厚度复位固定关闭；D只允许surface_densify_v3.py中的贴面受控增密。
 通过 `python train_mask_v3.py --help` 查看容差、权重和调度。所有默认几何权重只是起始配置，尚未通过云端实验调优。
 
 ## 固定相机和输入安全
@@ -90,7 +91,7 @@ CPU测试覆盖旋转、几何梯度、开关、相机定向和剪枝引用。Co
 `val_metrics.csv` 每个验证时刻包含十个相机及MEAN行，记录有效像素PSNR/MAE；`ssim_zero_mask_full_image`是置零mask后的整图SSIM。
 恢复运行仍使用新目录，CSV只包含续跑段；不要将恢复段当作从第一步开始的完整日志。
 
-完整流程 notebook：`colab/ZS601_AB_v3_complete.ipynb`；代码固定提交，A/B各30000步，输入先复制到`/content`。
+完整D流程 notebook：`colab/ZS601_D_v3_150k.ipynb`；代码固定提交，先200步冒烟，再运行D 150000步，输入先复制到`/content`。
 
 ## 云端存储策略
 
