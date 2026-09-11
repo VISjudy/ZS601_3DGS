@@ -1,6 +1,6 @@
 """Diagnostic attribute passes using unchanged baseline CUDA. Not depth supervision."""
 from pathlib import Path
-import json, math
+import json, math, hashlib
 import numpy as np
 import torch
 from PIL import Image
@@ -103,7 +103,9 @@ def _masked_metrics(cam,rgb):
     from utils.loss_utils import ssim
     gt=cam.original_image.cuda()
     mask=cam.alpha_mask.cuda() if cam.alpha_mask is not None else torch.ones_like(rgb[:1])
-    denom=(3*mask.sum()).clamp_min(1)
+    valid_pixels=mask.sum()
+    if float(valid_pixels)<=0: raise ValueError(f'Camera {cam.image_name} has an empty evaluation mask')
+    denom=3*valid_pixels
     residual=rgb-gt
     mse=float((residual.square()*mask).sum()/denom)
     mae=float((residual.abs()*mask).sum()/denom)
@@ -117,7 +119,7 @@ def rank_worst_test(records,count=10):
     return sorted(records,key=lambda r:(r['masked_psnr'],r['image_name']))[:min(count,len(records))]
 
 @torch.no_grad()
-def export_final_test(a,iteration,cameras,g,pipe):
+def export_final_test(a,iteration,cameras,g,pipe,identity):
     """Evaluate all test cameras, then save heavy diagnostics only for the worst ten."""
     from gaussian_renderer import render
     if iteration!=150000:
@@ -164,7 +166,13 @@ def export_final_test(a,iteration,cameras,g,pipe):
             'depth':stem+'_depth.png','normal':stem+'_normal.png'},
             'valid_depth_fraction':float(valid.float().mean()),'ellipsoid':ell_stat})
         print(f'[FINAL TEST WORST] rank={rank} camera={row["image_name"]} psnr={row["masked_psnr"]:.4f}',flush=True)
+    ordered_names=[cam.image_name for cam in cameras]
+    comparison_identity={'metric_protocol_version':'v3_mask_normalized_rgb_1',
+        'input_identity':identity,
+        'ordered_test_names_sha256':hashlib.sha256(
+            json.dumps(ordered_names,separators=(',',':')).encode()).hexdigest()}
     summary={'iteration':iteration,'camera_count':len(records),'ranking':'masked_psnr ascending, tie=image_name',
+        'comparison_identity':comparison_identity,
         'metrics_contract':{
             'masked_psnr':'PSNR from MSE normalized by valid mask pixels and 3 RGB channels',
             'masked_mae':'MAE normalized by valid mask pixels and 3 RGB channels',
