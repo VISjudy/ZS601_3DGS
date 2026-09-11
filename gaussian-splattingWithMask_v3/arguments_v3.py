@@ -66,6 +66,8 @@ def parse_args(argv=None):
                    help='Diagnostic opaque 1-sigma DC-color ellipsoids; no training effect')
     p.add_argument('--lidar_depth_cache', default='',
                    help='Local temporary cache directory; E requires it and it must not be on Drive')
+    p.add_argument('--lidar_depth_export', default='',
+                   help='New Drive dataset folder for formal pseudo-GT export')
     p.add_argument('--lambda_lidar_depth', type=float, default=.05)
     p.add_argument('--lidar_depth_start', type=int, default=1000)
     p.add_argument('--lidar_depth_warmup', type=int, default=4000)
@@ -74,10 +76,16 @@ def parse_args(argv=None):
     p.add_argument('--lidar_depth_splat_radius', type=int, default=1)
     p.add_argument('--lidar_depth_edge_relative', type=float, default=.02)
     p.add_argument('--lidar_depth_edge_absolute', type=float, default=.02)
+    p.add_argument('--lidar_depth_min_neighbors', type=int, default=2)
     p.add_argument('--lidar_depth_alpha_min', type=float, default=.05)
     p.add_argument('--lidar_depth_min_pixels', type=int, default=64)
     p.add_argument('--lidar_depth_chunk', type=int, default=250000)
     p.add_argument('--lidar_depth_huber_beta', type=float, default=.02)
+    p.add_argument('--lidar_depth_distance_power', type=float, default=1.)
+    p.add_argument('--lidar_depth_weight_min', type=float, default=.25)
+    p.add_argument('--lidar_depth_weight_max', type=float, default=4.)
+    p.add_argument('--lidar_depth_backproject_samples', type=int, default=4096)
+    p.add_argument('--lidar_depth_backproject_tolerance', type=float, default=.06)
     p.add_argument('--lidar_depth_cache_memory', type=int, default=32)
     p.add_argument('--resume', default='')
     # Remove inherited controls unused by the v3 fixed-population runner.
@@ -104,7 +112,9 @@ def parse_args(argv=None):
               'neighbor_radius_ratio','surface_tolerance_ratio','tangent_radius_ratio',
               'thickness_ratio','size_ratio','depth_visual_max','prune_patience','prune_min_views','lazy_cache',
               'lidar_depth_min','lidar_depth_max','lidar_depth_min_pixels','lidar_depth_chunk',
-              'lidar_depth_huber_beta','lidar_depth_cache_memory'):
+              'lidar_depth_huber_beta','lidar_depth_cache_memory','lidar_depth_min_neighbors',
+              'lidar_depth_weight_min','lidar_depth_weight_max','lidar_depth_backproject_samples',
+              'lidar_depth_backproject_tolerance'):
         if getattr(a,n)<=0: p.error(n+' must be positive')
     if a.knn<3 or not 0<a.planarity_min<1 or not 0<a.prune_max_fraction<1:
         p.error('invalid neighborhood, confidence or pruning fraction')
@@ -113,12 +123,16 @@ def parse_args(argv=None):
         p.error('invalid LiDAR depth loss weight/schedule')
     if a.lidar_depth_max<=a.lidar_depth_min or a.lidar_depth_splat_radius<0:
         p.error('invalid LiDAR depth range/splat radius')
-    if a.lidar_depth_edge_relative<0 or a.lidar_depth_edge_absolute<0:
+    if a.lidar_depth_edge_relative<0 or a.lidar_depth_edge_absolute<0 or a.lidar_depth_distance_power<0:
         p.error('invalid LiDAR depth edge thresholds')
     if not 0<a.lidar_depth_alpha_min<1:
         p.error('invalid LiDAR depth alpha threshold')
+    if a.lidar_depth_weight_max<a.lidar_depth_weight_min:
+        p.error('invalid LiDAR depth distance weight bounds')
     if a.lidar_depth_loss and not a.lidar_depth_cache:
         p.error('--lidar_depth_cache is required when lidar_depth_loss is on')
+    if a.lidar_depth_loss and a.iterations==150000 and not a.lidar_depth_export:
+        p.error('--lidar_depth_export is required for a 150000-iteration E run')
     a.optimizer_type='default'
     a.data_device='cpu'; a.lazy_load=True; a.train_test_exp=False
     # Deterministic A/B: black background, no depth training, no opacity resets or growth.
