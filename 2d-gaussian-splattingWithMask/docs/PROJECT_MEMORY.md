@@ -49,6 +49,14 @@ Failure / current blocker:
 - The notebook copies the unzipped dataset into a timestamped `/content/<run_id>/ZS601meetingroom_data_staged` directory.
 - If the original dataset has `sparse/*.txt` instead of `sparse/0/*.txt`, the notebook copies those files into the staged `sparse/0/` folder. It does not modify the original Drive zip.
 
+
+### 2026-09-11: WSL / Colab CLI probe
+
+Failure / current blocker:
+- `wsl -l -v` and `wsl -e bash -lc "command -v colab && colab version"` failed because no usable WSL Linux distribution is currently installed on this Windows host.
+- Therefore the official Colab CLI route cannot be used from this machine yet.
+- If unattended Colab runs are required later, install WSL2 Ubuntu, install `google-colab-cli` inside Ubuntu, and complete one manual `colab --auth=oauth2 sessions` OAuth handoff before asking Codex to run experiments.
+
 ## Next run checklist
 
 1. Open `colab/ZS601_2DGS_ProPlus_smoke.ipynb` from the GitHub branch in Colab.
