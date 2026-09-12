@@ -13,7 +13,7 @@ import os
 import random
 import json
 from utils.system_utils import searchForMaxIteration
-from scene.dataset_readers import sceneLoadTypeCallbacks
+from scene.dataset_readers import sceneLoadTypeCallbacks, fetchPly
 from scene.gaussian_model import GaussianModel
 from arguments import ModelParams
 from utils.camera_utils import cameraList_from_camInfos, camera_to_JSON
@@ -48,8 +48,14 @@ class Scene:
         else:
             assert False, "Could not recognize scene type!"
 
+        init_ply_path = getattr(args, "init_ply", "") or scene_info.ply_path
+        if not os.path.isfile(init_ply_path):
+            raise FileNotFoundError("Initialization PLY not found: {}".format(init_ply_path))
+        if getattr(args, "init_ply", ""):
+            print("Using explicit initialization PLY: {}".format(init_ply_path))
+
         if not self.loaded_iter:
-            with open(scene_info.ply_path, 'rb') as src_file, open(os.path.join(self.model_path, "input.ply") , 'wb') as dest_file:
+            with open(init_ply_path, 'rb') as src_file, open(os.path.join(self.model_path, "input.ply") , 'wb') as dest_file:
                 dest_file.write(src_file.read())
             json_cams = []
             camlist = []
@@ -80,7 +86,10 @@ class Scene:
                                                            "iteration_" + str(self.loaded_iter),
                                                            "point_cloud.ply"))
         else:
-            self.gaussians.create_from_pcd(scene_info.point_cloud, self.cameras_extent)
+            init_point_cloud = fetchPly(init_ply_path) if getattr(args, "init_ply", "") else scene_info.point_cloud
+            if init_point_cloud is None:
+                raise RuntimeError("Failed to read initialization point cloud: {}".format(init_ply_path))
+            self.gaussians.create_from_pcd(init_point_cloud, self.cameras_extent)
 
     def save(self, iteration):
         point_cloud_path = os.path.join(self.model_path, "point_cloud/iteration_{}".format(iteration))
