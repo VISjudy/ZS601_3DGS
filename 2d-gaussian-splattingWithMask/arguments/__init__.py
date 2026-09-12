@@ -57,6 +57,10 @@ class ModelParams(ParamGroup):
         self.data_device = "cuda"
         self.eval = False
         self.render_items = ['RGB', 'Alpha', 'Normal', 'Depth', 'Edge', 'Curvature']
+        self._init_ply = ""
+        self.preview_interval = 0
+        self.preview_view_count = 10
+        self.preview_manifest = ""
         super().__init__(parser, "Loading Parameters", sentinel)
 
     def extract(self, args):
