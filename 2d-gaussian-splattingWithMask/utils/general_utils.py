@@ -170,8 +170,9 @@ def colormap(img, cmap='jet'):
     fig.colorbar(im, ax=ax)
     fig.tight_layout()
     fig.canvas.draw()
-    data = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
-    data = data.reshape(fig.canvas.get_width_height()[::-1] + (3,))
-    img = torch.from_numpy(data / 255.).float().permute(2,0,1)
-    plt.close()
+    # Matplotlib >= 3.10 removed FigureCanvasAgg.tostring_rgb().
+    # buffer_rgba() is supported by current and older Agg backends.
+    data = np.asarray(fig.canvas.buffer_rgba())[..., :3].copy()
+    img = torch.from_numpy(data).float().div(255.0).permute(2, 0, 1)
+    plt.close(fig)
     return img
