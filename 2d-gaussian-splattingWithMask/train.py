@@ -245,6 +245,13 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                 tb_writer.add_scalar('train_loss_patches/dist_loss', ema_dist_for_log, iteration)
                 tb_writer.add_scalar('train_loss_patches/normal_loss', ema_normal_for_log, iteration)
 
+            # Persist a recoverable state before evaluation/preview code. The normal
+            # checkpoint below overwrites this after a successful optimizer step.
+            if iteration in checkpoint_iterations:
+                checkpoint_path = scene.model_path + "/chkpnt" + str(iteration) + ".pth"
+                print("\n[ITER {}] Saving pre-evaluation safety checkpoint".format(iteration))
+                torch.save((gaussians.capture(), iteration), checkpoint_path)
+
             training_report(tb_writer, iteration, Ll1, loss, l1_loss, iter_start.elapsed_time(iter_end), testing_iterations, scene, render, (pipe, background))
             preview_interval = int(getattr(dataset, "preview_interval", 0))
             if preview_interval > 0 and iteration % preview_interval == 0:
