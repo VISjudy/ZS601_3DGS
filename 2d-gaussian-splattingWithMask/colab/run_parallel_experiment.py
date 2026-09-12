@@ -68,7 +68,7 @@ def monitor_run(cmd,cwd,log):
 def find_dataset(base):
     cams=list(base.rglob('cameras.bin'))
     for cam in cams:
-        root=cam.parent.parent if cam.parent.name=='0' else cam.parent
+        root=cam.parent.parent.parent if cam.parent.name=='0' else (cam.parent.parent if cam.parent.name=='sparse' else cam.parent)
         if (root/'images').is_dir(): return root
     raise FileNotFoundError('No COLMAP dataset with images and cameras.bin')
 
