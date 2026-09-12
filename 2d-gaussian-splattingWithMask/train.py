@@ -10,6 +10,11 @@
 #
 
 import os
+import json
+import re
+import numpy as np
+from pathlib import Path
+from PIL import Image
 import torch
 from random import randint
 from utils.loss_utils import l1_loss, ssim
@@ -58,6 +63,88 @@ def masked_psnr(image, gt, mask):
     denom = (mask.sum() * image.shape[0]).clamp_min(1.0)
     mse = (((image - gt) ** 2) * mask).sum() / denom
     return 20 * torch.log10(1.0 / torch.sqrt(mse.clamp_min(1e-10)))
+
+def _save_tensor_png(tensor, path):
+    array = torch.clamp(tensor.detach(), 0.0, 1.0).mul(255).byte().permute(1, 2, 0).cpu().numpy()
+    if array.shape[2] == 1:
+        array = array[:, :, 0]
+    Image.fromarray(array).save(path)
+
+def _preview_cameras(scene, dataset):
+    cameras = sorted(scene.getTrainCameras(), key=lambda camera: camera.image_name)
+    requested = []
+    manifest_path = getattr(dataset, "preview_manifest", "")
+    if manifest_path and os.path.isfile(manifest_path):
+        with open(manifest_path, encoding="utf-8") as handle:
+            manifest = json.load(handle)
+        requested = manifest.get("camera_names", []) if isinstance(manifest, dict) else manifest
+    by_name = {camera.image_name: camera for camera in cameras}
+    by_stem = {Path(camera.image_name).stem: camera for camera in cameras}
+    selected = []
+    for name in requested:
+        camera = by_name.get(name) or by_stem.get(Path(name).stem)
+        if camera is not None and camera not in selected:
+            selected.append(camera)
+    target = max(1, int(getattr(dataset, "preview_view_count", 10)))
+    if len(selected) < target and cameras:
+        for index in np.linspace(0, len(cameras) - 1, min(target, len(cameras)), dtype=int):
+            camera = cameras[int(index)]
+            if camera not in selected:
+                selected.append(camera)
+            if len(selected) == target:
+                break
+    return selected[:target]
+
+@torch.no_grad()
+def save_training_previews(iteration, scene, dataset, pipe, background):
+    cameras = _preview_cameras(scene, dataset)
+    target = int(getattr(dataset, "preview_view_count", 10))
+    if len(cameras) != target:
+        raise RuntimeError("Preview requested {} cameras but resolved {}".format(target, len(cameras)))
+    root = Path(scene.model_path) / "previews" / ("iteration_{:06d}".format(iteration))
+    rgb_dir, normal_dir, depth_dir = root / "rgb", root / "normal", root / "depth"
+    for directory in (rgb_dir, normal_dir, depth_dir):
+        directory.mkdir(parents=True, exist_ok=True)
+    records = []
+    for index, camera in enumerate(cameras):
+        package = render(camera, scene.gaussians, pipe, background)
+        rgb = torch.clamp(package["render"], 0.0, 1.0)
+        normal = torch.nn.functional.normalize(package["rend_normal"], dim=0, eps=1e-6)
+        normal = torch.clamp(normal * 0.5 + 0.5, 0.0, 1.0)
+        depth = package["surf_depth"]
+        valid = torch.isfinite(depth) & (depth > 0)
+        if bool(valid.any()):
+            values = depth[valid]
+            depth_min = float(torch.quantile(values, 0.01).item())
+            depth_max = float(torch.quantile(values, 0.99).item())
+            if depth_max <= depth_min:
+                depth_max = depth_min + 1e-6
+            depth_vis = torch.clamp((depth - depth_min) / (depth_max - depth_min), 0.0, 1.0)
+            depth_vis = torch.where(valid, depth_vis, torch.zeros_like(depth_vis))
+        else:
+            depth_min, depth_max = 0.0, 0.0
+            depth_vis = torch.zeros_like(depth)
+        safe_name = re.sub(r"[^A-Za-z0-9_.-]+", "_", camera.image_name)
+        stem = "{:02d}_{}".format(index, safe_name)
+        _save_tensor_png(rgb, rgb_dir / (stem + ".png"))
+        _save_tensor_png(normal, normal_dir / (stem + ".png"))
+        _save_tensor_png(depth_vis.repeat(3, 1, 1), depth_dir / (stem + ".png"))
+        records.append({
+            "index": index,
+            "camera_name": camera.image_name,
+            "depth_normalization": {"percentile_min": depth_min, "percentile_max": depth_max},
+        })
+        del package, rgb, normal, depth, depth_vis
+    metadata = {
+        "iteration": iteration,
+        "view_count": len(records),
+        "camera_names": [record["camera_name"] for record in records],
+        "views": records,
+    }
+    with open(root / "metadata.json", "w", encoding="utf-8") as handle:
+        json.dump(metadata, handle, indent=2, ensure_ascii=False)
+    print("\n[ITER {}] Saved {} fixed-view RGB/normal/depth previews to {}".format(iteration, len(records), root), flush=True)
+    torch.cuda.empty_cache()
 
 def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoint_iterations, checkpoint):
     first_iter = 0
@@ -130,6 +217,16 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
             ema_normal_for_log = 0.4 * normal_loss.item() + 0.6 * ema_normal_for_log
 
 
+            if iteration % 1000 == 0:
+                train_psnr = masked_psnr(image, gt_image, valid_mask).mean().item()
+                print(
+                    "\n[ITER {}] loss={:.6f} total={:.6f} distort={:.6f} normal={:.6f} train_psnr={:.4f} points={}".format(
+                        iteration, loss.item(), total_loss.item(), dist_loss.item(), normal_loss.item(),
+                        train_psnr, len(gaussians.get_xyz)
+                    ),
+                    flush=True,
+                )
+
             if iteration % 10 == 0:
                 loss_dict = {
                     "Loss": f"{ema_loss_for_log:.{5}f}",
@@ -149,6 +246,9 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                 tb_writer.add_scalar('train_loss_patches/normal_loss', ema_normal_for_log, iteration)
 
             training_report(tb_writer, iteration, Ll1, loss, l1_loss, iter_start.elapsed_time(iter_end), testing_iterations, scene, render, (pipe, background))
+            preview_interval = int(getattr(dataset, "preview_interval", 0))
+            if preview_interval > 0 and iteration % preview_interval == 0:
+                save_training_previews(iteration, scene, dataset, pipe, background)
             if (iteration in saving_iterations):
                 print("\n[ITER {}] Saving Gaussians".format(iteration))
                 scene.save(iteration)
