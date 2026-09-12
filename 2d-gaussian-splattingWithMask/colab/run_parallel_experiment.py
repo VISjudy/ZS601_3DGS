@@ -17,6 +17,7 @@ prefix={'b':'zs601_2dgs_B_lidar_parallel_','c':'zs601_2dgs_C_lidar_distortion_pa
 OUT=DRIVE/(prefix+STAMP)
 OUT.mkdir(parents=True,exist_ok=True)
 STATUS=OUT/'status.json'
+print(f'OUTPUT_DIR={OUT}',flush=True)
 
 def state(stage,**kw):
     data={'mode':ARGS.mode,'stage':stage,'updated':datetime.now().isoformat(),**kw}
@@ -54,14 +55,56 @@ def gpu_name():
 
 def monitor_run(cmd,cwd,log):
     peak=0
+    started=time.time()
+    last_report=0.0
+    lock=threading.Lock()
     with (OUT/log).open('a',encoding='utf-8') as f:
-        p=subprocess.Popen([str(x) for x in cmd],cwd=cwd,stdout=f,stderr=subprocess.STDOUT,text=True)
+        p=subprocess.Popen(
+            [str(x) for x in cmd],
+            cwd=cwd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
+        )
+
+        def pump_output():
+            for line in p.stdout:
+                print(line,end='',flush=True)
+                with lock:
+                    f.write(line)
+                    f.flush()
+
+        reader=threading.Thread(target=pump_output,daemon=True)
+        reader.start()
         while p.poll() is None:
-            q=subprocess.run(['nvidia-smi','--query-compute-apps=used_memory','--format=csv,noheader,nounits'],capture_output=True,text=True).stdout
+            q=subprocess.run(
+                ['nvidia-smi','--query-compute-apps=used_memory','--format=csv,noheader,nounits'],
+                capture_output=True,
+                text=True,
+            ).stdout
             vals=[int(x.strip()) for x in q.splitlines() if x.strip().isdigit()]
-            peak=max([peak]+vals); time.sleep(2)
-        rc=p.returncode
-    print('RC',rc,'PEAK_MIB',peak,flush=True)
+            current=max(vals) if vals else 0
+            peak=max(peak,current)
+            elapsed=time.time()-started
+            if elapsed-last_report>=30:
+                report='[MONITOR] elapsed={:.1f}min gpu_current={}MiB gpu_peak={}MiB output={}\n'.format(
+                    elapsed/60,current,peak,OUT
+                )
+                print(report,end='',flush=True)
+                with lock:
+                    f.write(report)
+                    f.flush()
+                last_report=elapsed
+            time.sleep(2)
+        rc=p.wait()
+        reader.join(timeout=30)
+    print(
+        '[MONITOR] finished rc={} elapsed={:.1f}min peak={}MiB output={}'.format(
+            rc,(time.time()-started)/60,peak,OUT
+        ),
+        flush=True,
+    )
     if rc: raise subprocess.CalledProcessError(rc,cmd)
     return peak
 
