@@ -102,9 +102,24 @@ def save_training_previews(iteration, scene, dataset, pipe, background):
     if len(cameras) != target:
         raise RuntimeError("Preview requested {} cameras but resolved {}".format(target, len(cameras)))
     root = Path(scene.model_path) / "previews" / ("iteration_{:06d}".format(iteration))
-    rgb_dir, normal_dir, depth_dir = root / "rgb", root / "normal", root / "depth"
-    for directory in (rgb_dir, normal_dir, depth_dir):
+    rgb_dir = root / "rgb"
+    normal_dir = root / "normal"
+    depth_dir = root / "depth"
+    gaussian_dir = root / "gaussian_ellipsoids"
+    for directory in (rgb_dir, normal_dir, depth_dir, gaussian_dir):
         directory.mkdir(parents=True, exist_ok=True)
+
+    # Stable spatial-hash colors make neighboring Gaussian footprints visually
+    # separable while preserving their learned opacity, scale and rotation.
+    xyz = scene.gaussians.get_xyz.detach()
+    hash_weights = torch.tensor(
+        [[12.9898, 78.233, 37.719], [39.3468, 11.135, 83.155], [73.156, 52.235, 9.151]],
+        dtype=xyz.dtype,
+        device=xyz.device,
+    )
+    hashed = torch.sin(xyz @ hash_weights.T) * 43758.5453
+    gaussian_colors = 0.15 + 0.85 * (hashed - torch.floor(hashed))
+
     records = []
     for index, camera in enumerate(cameras):
         package = render(camera, scene.gaussians, pipe, background)
@@ -126,24 +141,46 @@ def save_training_previews(iteration, scene, dataset, pipe, background):
             depth_vis = torch.zeros_like(depth)
         safe_name = re.sub(r"[^A-Za-z0-9_.-]+", "_", camera.image_name)
         stem = "{:02d}_{}".format(index, safe_name)
+        gaussian_package = render(
+            camera,
+            scene.gaussians,
+            pipe,
+            background,
+            scaling_modifier=1.0,
+            override_color=gaussian_colors,
+        )
+        gaussian_vis = torch.clamp(gaussian_package["render"], 0.0, 1.0)
+
         _save_tensor_png(rgb, rgb_dir / (stem + ".png"))
         _save_tensor_png(normal, normal_dir / (stem + ".png"))
         _save_tensor_png(depth_vis.repeat(3, 1, 1), depth_dir / (stem + ".png"))
+        _save_tensor_png(gaussian_vis, gaussian_dir / (stem + ".png"))
         records.append({
             "index": index,
             "camera_name": camera.image_name,
             "depth_normalization": {"percentile_min": depth_min, "percentile_max": depth_max},
         })
-        del package, rgb, normal, depth, depth_vis
+        del package, gaussian_package, rgb, normal, depth, depth_vis, gaussian_vis
     metadata = {
         "iteration": iteration,
         "view_count": len(records),
         "camera_names": [record["camera_name"] for record in records],
+        "gaussian_count": int(xyz.shape[0]),
+        "gaussian_visualization": {
+            "directory": "gaussian_ellipsoids",
+            "coloring": "stable_spatial_hash",
+            "scaling_modifier": 1.0,
+        },
         "views": records,
     }
     with open(root / "metadata.json", "w", encoding="utf-8") as handle:
         json.dump(metadata, handle, indent=2, ensure_ascii=False)
-    print("\n[ITER {}] Saved {} fixed-view RGB/normal/depth previews to {}".format(iteration, len(records), root), flush=True)
+    print(
+        "\n[ITER {}] Saved {} fixed-view RGB/depth/normal/Gaussian-ellipsoid previews "
+        "(gaussians={}) to {}".format(iteration, len(records), int(xyz.shape[0]), root),
+        flush=True,
+    )
+    del gaussian_colors, xyz
     torch.cuda.empty_cache()
 
 def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoint_iterations, checkpoint):
