@@ -15,6 +15,7 @@ PARSER.add_argument('--postprocess-only',action='store_true',help='Skip training
 PARSER.add_argument('--resume-training',action='store_true',help='Resume training from the latest checkpoint in --resume-output')
 PARSER.add_argument('--preflight-only',action='store_true',help='Run only the GPU smoke test and keep its logs')
 PARSER.add_argument('--skip-preflight',action='store_true',help='Start formal training without repeating the smoke test')
+PARSER.add_argument('--skip-install',action='store_true',help='Use dependencies already present in the Colab runtime')
 ARGS=PARSER.parse_args()
 DRIVE=Path(ARGS.drive_root)
 STAMP=datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -167,7 +168,9 @@ def geometry_against_lidar(model,lidar_xyz):
 
 def run_zs601():
     state('setup',gpu=gpu_name())
-    repo=Path(__file__).resolve().parents[1]; patch_cuda(repo); pip_install(repo)
+    repo=Path(__file__).resolve().parents[1]; patch_cuda(repo)
+    if not ARGS.skip_install:
+        pip_install(repo)
     z=Path('/content/drive/MyDrive/LCCDataset/ZS601meetingroom/ZS601meetingroom_data.zip')
     base=Path('/content/zs601_b_dataset');
     if not base.exists(): zipfile.ZipFile(z).extractall(base)
