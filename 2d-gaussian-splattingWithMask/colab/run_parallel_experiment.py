@@ -208,7 +208,7 @@ def run_zs601():
                 state('training',preflight_skipped=True,alignment=align)
         monitor_run([sys.executable,'train.py','-m',model,'--iterations','150000','--test_iterations','50000','100000','150000','--save_iterations','50000','100000','150000','--checkpoint_iterations','50000','100000','150000',*start_args,*common],repo,'train.log')
     state('rendering')
-    run([sys.executable,'render.py','-s',data,'-m',model,'--iteration','150000','--skip_train','--depth_ratio','0','--quiet'],repo,'render.log')
+    run([sys.executable,'render.py','-s',data,'-m',model,'--iteration','150000','--skip_train','--skip_mesh','--depth_ratio','0','--quiet'],repo,'render.log')
     run([sys.executable,'metrics.py','-m',model],repo,'metrics.log')
     geom=geometry_against_lidar(model,xyz); (OUT/'geometry_metrics.json').write_text(json.dumps(geom,indent=2))
     result={'mode':ARGS.mode,'gpu':gpu_name(),'alignment':align,'preflight_peak_mib':peak,'image_metrics':json.loads((model/'results.json').read_text()) if (model/'results.json').exists() else None,'geometry_metrics':geom}
