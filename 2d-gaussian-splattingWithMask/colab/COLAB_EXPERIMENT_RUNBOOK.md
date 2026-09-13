@@ -56,6 +56,7 @@
 - 修复：Colab 选择过去的 Python 3.11/3.12 运行时，同时保留 L4 GPU；再逐项安装依赖和两个 submodule。Notebook 在安装前主动拒绝 Python 3.13，并打印明确提示。
 - 保护：依赖检测与安装拆为独立 Cell，安装完成后再次逐项检查。后续 B/C 命令使用 `--skip-install`，避免训练 Cell 中静默安装。
 - 注意：CUDA 扩展必须从仓库 submodule 构建，且 `TORCH_CUDA_ARCH_LIST=8.9` 匹配 L4。
+- CUDA 12.x 额外修复：`simple-knn/simple_knn.cu` 使用 `FLT_MAX` 但未包含 `<cfloat>`，表现为 `identifier "FLT_MAX" is undefined`。必须在编译前插入 `#include <cfloat>`；`diff-surfel-rasterization` 同理确保包含 `<cstdint>`。
 
 ### 5. Colab 页面显示未使用 GPU，但 Drive 文件仍变化
 
