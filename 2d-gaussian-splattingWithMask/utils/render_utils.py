@@ -19,7 +19,10 @@ import types
 from typing import List, Mapping, Optional, Text, Tuple, Union
 import copy
 from PIL import Image
-import mediapy as media
+try:
+  import mediapy as media
+except ImportError:
+  media = None
 from matplotlib import cm
 from tqdm import tqdm
 
