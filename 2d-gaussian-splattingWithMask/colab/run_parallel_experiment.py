@@ -13,6 +13,8 @@ PARSER.add_argument('--drive-root',default='/content/drive/MyDrive/LCCDataset/zs
 PARSER.add_argument('--resume-output',default=None,help='Reuse an existing Drive run directory')
 PARSER.add_argument('--postprocess-only',action='store_true',help='Skip training and rerun render/metrics from chkpnt150000')
 PARSER.add_argument('--resume-training',action='store_true',help='Resume training from the latest checkpoint in --resume-output')
+PARSER.add_argument('--preflight-only',action='store_true',help='Run only the GPU smoke test and keep its logs')
+PARSER.add_argument('--skip-preflight',action='store_true',help='Start formal training without repeating the smoke test')
 ARGS=PARSER.parse_args()
 DRIVE=Path(ARGS.drive_root)
 STAMP=datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -190,11 +192,17 @@ def run_zs601():
             start_args=['--start_checkpoint',checkpoint]
             state('resuming_training',checkpoint=str(checkpoint),alignment=align)
         else:
-            pre=OUT/'preflight_model'; pre_iters=4000 if ARGS.mode=='c' else 200
-            state('preflight',alignment=align,iterations=pre_iters)
-            peak=monitor_run([sys.executable,'train.py','-m',pre,'--iterations',str(pre_iters),'--save_iterations',str(pre_iters),*common],repo,'preflight.log')
-            if peak>13824: raise RuntimeError(f'preflight peak {peak} MiB exceeds 13.5GB')
-            state('training',preflight_peak_mib=peak)
+            if not ARGS.skip_preflight:
+                pre=OUT/'preflight_model'; pre_iters=4000 if ARGS.mode=='c' else 200
+                state('preflight',alignment=align,iterations=pre_iters)
+                peak=monitor_run([sys.executable,'train.py','-m',pre,'--iterations',str(pre_iters),'--save_iterations',str(pre_iters),*common],repo,'preflight.log')
+                if peak>13824: raise RuntimeError(f'preflight peak {peak} MiB exceeds 13.5GB')
+                if ARGS.preflight_only:
+                    state('preflight_complete',preflight_peak_mib=peak,alignment=align)
+                    return
+                state('training',preflight_peak_mib=peak)
+            else:
+                state('training',preflight_skipped=True,alignment=align)
         monitor_run([sys.executable,'train.py','-m',model,'--iterations','150000','--test_iterations','50000','100000','150000','--save_iterations','50000','100000','150000','--checkpoint_iterations','50000','100000','150000',*start_args,*common],repo,'train.log')
     state('rendering')
     run([sys.executable,'render.py','-s',data,'-m',model,'--iteration','150000','--skip_train','--depth_ratio','0','--quiet'],repo,'render.log')
