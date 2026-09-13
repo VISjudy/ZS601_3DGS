@@ -10,11 +10,14 @@ import numpy as np
 PARSER=argparse.ArgumentParser()
 PARSER.add_argument('--mode',required=True,choices=['b','c','official'])
 PARSER.add_argument('--drive-root',default='/content/drive/MyDrive/LCCDataset/zs601_output')
+PARSER.add_argument('--resume-output',default=None,help='Reuse an existing Drive run directory')
+PARSER.add_argument('--postprocess-only',action='store_true',help='Skip training and rerun render/metrics from chkpnt150000')
+PARSER.add_argument('--resume-training',action='store_true',help='Resume training from the latest checkpoint in --resume-output')
 ARGS=PARSER.parse_args()
 DRIVE=Path(ARGS.drive_root)
 STAMP=datetime.now().strftime('%Y%m%d_%H%M%S')
 prefix={'b':'zs601_2dgs_B_lidar_parallel_','c':'zs601_2dgs_C_lidar_distortion_parallel_','official':'official_2dgs_DTU_scan105_parallel_'}[ARGS.mode]
-OUT=DRIVE/(prefix+STAMP)
+OUT=Path(ARGS.resume_output) if ARGS.resume_output else DRIVE/(prefix+STAMP)
 OUT.mkdir(parents=True,exist_ok=True)
 STATUS=OUT/'status.json'
 print(f'OUTPUT_DIR={OUT}',flush=True)
@@ -37,7 +40,7 @@ def run(cmd,cwd=None,log='run.log',check=True):
 os.environ.setdefault('TORCH_CUDA_ARCH_LIST', '7.5')
 
 def pip_install(repo=None):
-    run([sys.executable,'-m','pip','install','-q','plyfile','laspy[lazrs]','trimesh','scikit-image','gdown'],log='install.log')
+    run([sys.executable,'-m','pip','install','-q','plyfile','laspy[lazrs]','trimesh','scikit-image','gdown','mediapy'],log='install.log')
     if repo:
         for sub in ['submodules/diff-surfel-rasterization','submodules/simple-knn']:
             run([sys.executable,'-m','pip','install','-q',str(repo/sub)],log='install.log')
@@ -170,11 +173,75 @@ def run_zs601():
     init=data/'lidar_init_3cm_normals.ply'; xyz,_=make_lidar_ply(las,init); align=colmap_alignment(repo,data,xyz)
     manifest=DRIVE/'zs601_2dgs_A_sfm_colored_fullres_20260912_045340'/'preview_cameras.json'
     common=['-s',data,'--images','images','--masks','masks','--mask_valid_value','black','--resolution','1','--eval','--sh_degree','2','--position_lr_init','0.000016','--position_lr_final','0.00000016','--position_lr_max_steps','150000','--scaling_lr','0.0015','--densification_interval','10000','--densify_until_iter','100000','--opacity_reset_interval','150000','--densify_grad_threshold','0.0002','--lambda_normal','0.05','--lambda_dist',('1000' if ARGS.mode=='c' else '0.0'),'--depth_ratio','0','--init_ply',init,'--preview_interval','5000','--preview_view_count','10','--preview_manifest',manifest,'--quiet']
-    pre=OUT/'preflight_model'; pre_iters=4000 if ARGS.mode=='c' else 200; state('preflight',alignment=align,iterations=pre_iters)
-    peak=monitor_run([sys.executable,'train.py','-m',pre,'--iterations',str(pre_iters),'--save_iterations',str(pre_iters),*common],repo,'preflight.log')
-    if peak>13824: raise RuntimeError(f'preflight peak {peak} MiB exceeds 13.5GB')
-    model=OUT/'model'; state('training',preflight_peak_mib=peak)
-    monitor_run([sys.executable,'train.py','-m',model,'--iterations','150000','--test_iterations','50000','100000','150000','--save_iterations','50000','100000','150000','--checkpoint_iterations','50000','100000','150000',*common],repo,'train.log')
+    model=OUT/'model'
+    peak=None
+    if ARGS.postprocess_only:
+        checkpoint=model/'chkpnt150000.pth'
+        if not checkpoint.exists():
+            raise FileNotFoundError(f'Cannot postprocess without {checkpoint}')
+        state('resuming_postprocess',checkpoint=str(checkpoint),alignment=align)
+    else:
+        start_args=[]
+        if ARGS.resume_training:
+            checkpoints=list(model.glob('chkpnt*.pth'))
+            if not checkpoints:
+                raise FileNotFoundError(f'No checkpoint found in {model}')
+            checkpoint=max(checkpoints,key=lambda p:int(re.search(r'chkpnt(\\d+)\\.pth
+    run([sys.executable,'render.py','-s',data,'-m',model,'--iteration','150000','--skip_train','--depth_ratio','0','--quiet'],repo,'render.log')
+    run([sys.executable,'metrics.py','-m',model],repo,'metrics.log')
+    geom=geometry_against_lidar(model,xyz); (OUT/'geometry_metrics.json').write_text(json.dumps(geom,indent=2))
+    result={'mode':ARGS.mode,'gpu':gpu_name(),'alignment':align,'preflight_peak_mib':peak,'image_metrics':json.loads((model/'results.json').read_text()) if (model/'results.json').exists() else None,'geometry_metrics':geom}
+    (OUT/'results_summary.json').write_text(json.dumps(result,indent=2)); state('complete',summary=str(OUT/'results_summary.json'))
+
+def download(url,dest):
+    dest.parent.mkdir(parents=True,exist_ok=True); run(['wget','-c',url,'-O',dest],log='download.log')
+
+def run_official():
+    state('setup',gpu=gpu_name())
+    repo=Path('/content/official_2dgs')
+    if not repo.exists(): run(['git','clone','--recursive','https://github.com/hbb1/2d-gaussian-splatting.git',repo],log='install.log')
+    commit=subprocess.run(['git','rev-parse','HEAD'],cwd=repo,capture_output=True,text=True,check=True).stdout.strip(); (OUT/'official_commit.txt').write_text(commit+chr(10))
+    patch_cuda(repo); pip_install(repo)
+    dl=Path('/content/dtu_download'); dl.mkdir(exist_ok=True)
+    archive=next(dl.rglob('dtu.tar.gz'),None)
+    if archive is None:
+        run(['gdown','--folder','https://drive.google.com/drive/folders/1SJFgt8qhQomHX55Q4xSvYE2C6-8tFll9','-O',dl],log='download.log'); archive=next(dl.rglob('dtu.tar.gz'))
+    data_base=Path('/content/dtu_scan105');
+    if not list(data_base.rglob('cameras.npz')):
+        data_base.mkdir(exist_ok=True)
+        with tarfile.open(archive) as t:
+            members=[m for m in t.getmembers() if 'scan105' in m.name]; t.extractall(data_base,members=members)
+    scan=next(p.parent for p in data_base.rglob('cameras.npz') if p.parent.name=='scan105')
+    gt=Path('/content/dtu_official_gt'); gt.mkdir(exist_ok=True)
+    if not (gt/'Points').exists(): download('https://roboimagedata2.compute.dtu.dk/data/MVS/Points.zip',gt/'Points.zip'); zipfile.ZipFile(gt/'Points.zip').extractall(gt)
+    if not (gt/'SampleSet').exists(): download('https://roboimagedata2.compute.dtu.dk/data/MVS/SampleSet.zip',gt/'SampleSet.zip'); zipfile.ZipFile(gt/'SampleSet.zip').extractall(gt)
+    model=OUT/'model'; state('training',official_commit=commit)
+    monitor_run([sys.executable,'train.py','-s',scan,'-m',model,'-r','2','--depth_ratio','1','--lambda_dist','1000','--eval','--quiet','--test_iterations','7000','15000','30000','--save_iterations','30000'],repo,'train.log')
+    state('rendering')
+    run([sys.executable,'render.py','--iteration','30000','-s',scan,'-m',model,'-r','2','--depth_ratio','1','--skip_train','--num_cluster','1','--voxel_size','0.004','--sdf_trunc','0.016','--depth_trunc','3.0','--quiet'],repo,'render.log')
+    run([sys.executable,'metrics.py','-m',model],repo,'metrics.log')
+    mesh=model/'train'/'ours_30000'/'fuse_post.ply'
+    ev=repo/'scripts/eval_dtu/evaluate_single_scene.py'; eval_out=OUT/'geometry_eval'
+    run([sys.executable,ev,'--input_mesh',mesh,'--scan_id','105','--output_dir',eval_out,'--mask_dir',scan.parent,'--DTU',gt],repo,'geometry.log')
+    text=(OUT/'geometry.log').read_text(errors='ignore'); nums=re.findall(r'(?i)(?:overall|chamfer|mean)[^\n]*?([0-9]+(?:\.[0-9]+)?)',text)
+    result={'mode':'official','gpu':gpu_name(),'official_commit':commit,'config':{'scene':'scan105','resolution':2,'depth_ratio':1,'lambda_dist':1000,'eval_split':True,'iterations':30000},'image_metrics':json.loads((model/'results.json').read_text()) if (model/'results.json').exists() else None,'geometry_metric_candidates':nums[-10:],'mesh':str(mesh)}
+    (OUT/'results_summary.json').write_text(json.dumps(result,indent=2)); state('complete',summary=str(OUT/'results_summary.json'))
+
+try:
+    run_zs601() if ARGS.mode in ('b','c') else run_official()
+except Exception as exc:
+    import traceback; traceback.print_exc(); state('failed',error=repr(exc)); raise
+
+,p.name).group(1)))
+            start_args=['--start_checkpoint',checkpoint]
+            state('resuming_training',checkpoint=str(checkpoint),alignment=align)
+        else:
+            pre=OUT/'preflight_model'; pre_iters=4000 if ARGS.mode=='c' else 200
+            state('preflight',alignment=align,iterations=pre_iters)
+            peak=monitor_run([sys.executable,'train.py','-m',pre,'--iterations',str(pre_iters),'--save_iterations',str(pre_iters),*common],repo,'preflight.log')
+            if peak>13824: raise RuntimeError(f'preflight peak {peak} MiB exceeds 13.5GB')
+            state('training',preflight_peak_mib=peak)
+        monitor_run([sys.executable,'train.py','-m',model,'--iterations','150000','--test_iterations','50000','100000','150000','--save_iterations','50000','100000','150000','--checkpoint_iterations','50000','100000','150000',*start_args,*common],repo,'train.log')
     state('rendering')
     run([sys.executable,'render.py','-s',data,'-m',model,'--iteration','150000','--skip_train','--depth_ratio','0','--quiet'],repo,'render.log')
     run([sys.executable,'metrics.py','-m',model],repo,'metrics.log')
