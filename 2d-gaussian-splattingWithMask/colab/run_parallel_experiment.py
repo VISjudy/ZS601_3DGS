@@ -186,53 +186,7 @@ def run_zs601():
             checkpoints=list(model.glob('chkpnt*.pth'))
             if not checkpoints:
                 raise FileNotFoundError(f'No checkpoint found in {model}')
-            checkpoint=max(checkpoints,key=lambda p:int(re.search(r'chkpnt(\\d+)\\.pth
-    run([sys.executable,'render.py','-s',data,'-m',model,'--iteration','150000','--skip_train','--depth_ratio','0','--quiet'],repo,'render.log')
-    run([sys.executable,'metrics.py','-m',model],repo,'metrics.log')
-    geom=geometry_against_lidar(model,xyz); (OUT/'geometry_metrics.json').write_text(json.dumps(geom,indent=2))
-    result={'mode':ARGS.mode,'gpu':gpu_name(),'alignment':align,'preflight_peak_mib':peak,'image_metrics':json.loads((model/'results.json').read_text()) if (model/'results.json').exists() else None,'geometry_metrics':geom}
-    (OUT/'results_summary.json').write_text(json.dumps(result,indent=2)); state('complete',summary=str(OUT/'results_summary.json'))
-
-def download(url,dest):
-    dest.parent.mkdir(parents=True,exist_ok=True); run(['wget','-c',url,'-O',dest],log='download.log')
-
-def run_official():
-    state('setup',gpu=gpu_name())
-    repo=Path('/content/official_2dgs')
-    if not repo.exists(): run(['git','clone','--recursive','https://github.com/hbb1/2d-gaussian-splatting.git',repo],log='install.log')
-    commit=subprocess.run(['git','rev-parse','HEAD'],cwd=repo,capture_output=True,text=True,check=True).stdout.strip(); (OUT/'official_commit.txt').write_text(commit+chr(10))
-    patch_cuda(repo); pip_install(repo)
-    dl=Path('/content/dtu_download'); dl.mkdir(exist_ok=True)
-    archive=next(dl.rglob('dtu.tar.gz'),None)
-    if archive is None:
-        run(['gdown','--folder','https://drive.google.com/drive/folders/1SJFgt8qhQomHX55Q4xSvYE2C6-8tFll9','-O',dl],log='download.log'); archive=next(dl.rglob('dtu.tar.gz'))
-    data_base=Path('/content/dtu_scan105');
-    if not list(data_base.rglob('cameras.npz')):
-        data_base.mkdir(exist_ok=True)
-        with tarfile.open(archive) as t:
-            members=[m for m in t.getmembers() if 'scan105' in m.name]; t.extractall(data_base,members=members)
-    scan=next(p.parent for p in data_base.rglob('cameras.npz') if p.parent.name=='scan105')
-    gt=Path('/content/dtu_official_gt'); gt.mkdir(exist_ok=True)
-    if not (gt/'Points').exists(): download('https://roboimagedata2.compute.dtu.dk/data/MVS/Points.zip',gt/'Points.zip'); zipfile.ZipFile(gt/'Points.zip').extractall(gt)
-    if not (gt/'SampleSet').exists(): download('https://roboimagedata2.compute.dtu.dk/data/MVS/SampleSet.zip',gt/'SampleSet.zip'); zipfile.ZipFile(gt/'SampleSet.zip').extractall(gt)
-    model=OUT/'model'; state('training',official_commit=commit)
-    monitor_run([sys.executable,'train.py','-s',scan,'-m',model,'-r','2','--depth_ratio','1','--lambda_dist','1000','--eval','--quiet','--test_iterations','7000','15000','30000','--save_iterations','30000'],repo,'train.log')
-    state('rendering')
-    run([sys.executable,'render.py','--iteration','30000','-s',scan,'-m',model,'-r','2','--depth_ratio','1','--skip_train','--num_cluster','1','--voxel_size','0.004','--sdf_trunc','0.016','--depth_trunc','3.0','--quiet'],repo,'render.log')
-    run([sys.executable,'metrics.py','-m',model],repo,'metrics.log')
-    mesh=model/'train'/'ours_30000'/'fuse_post.ply'
-    ev=repo/'scripts/eval_dtu/evaluate_single_scene.py'; eval_out=OUT/'geometry_eval'
-    run([sys.executable,ev,'--input_mesh',mesh,'--scan_id','105','--output_dir',eval_out,'--mask_dir',scan.parent,'--DTU',gt],repo,'geometry.log')
-    text=(OUT/'geometry.log').read_text(errors='ignore'); nums=re.findall(r'(?i)(?:overall|chamfer|mean)[^\n]*?([0-9]+(?:\.[0-9]+)?)',text)
-    result={'mode':'official','gpu':gpu_name(),'official_commit':commit,'config':{'scene':'scan105','resolution':2,'depth_ratio':1,'lambda_dist':1000,'eval_split':True,'iterations':30000},'image_metrics':json.loads((model/'results.json').read_text()) if (model/'results.json').exists() else None,'geometry_metric_candidates':nums[-10:],'mesh':str(mesh)}
-    (OUT/'results_summary.json').write_text(json.dumps(result,indent=2)); state('complete',summary=str(OUT/'results_summary.json'))
-
-try:
-    run_zs601() if ARGS.mode in ('b','c') else run_official()
-except Exception as exc:
-    import traceback; traceback.print_exc(); state('failed',error=repr(exc)); raise
-
-,p.name).group(1)))
+            checkpoint=max(checkpoints,key=lambda p:int(p.stem.replace('chkpnt','')))
             start_args=['--start_checkpoint',checkpoint]
             state('resuming_training',checkpoint=str(checkpoint),alignment=align)
         else:
