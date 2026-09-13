@@ -42,7 +42,7 @@ def run(cmd,cwd=None,log='run.log',check=True):
 os.environ.setdefault('TORCH_CUDA_ARCH_LIST', '7.5')
 
 def pip_install(repo=None):
-    run([sys.executable,'-m','pip','install','-q','plyfile','laspy[lazrs]','trimesh','scikit-image','gdown','mediapy'],log='install.log')
+    run([sys.executable,'-m','pip','install','-q','plyfile','laspy[lazrs]','trimesh','scikit-image','gdown'],log='install.log')
     if repo:
         for sub in ['submodules/diff-surfel-rasterization','submodules/simple-knn']:
             run([sys.executable,'-m','pip','install','-q',str(repo/sub)],log='install.log')
