@@ -64,6 +64,13 @@
 - 检查：以当前 Cell 的 `nvidia-smi`、运行状态栏和 `status.json.updated` 三者为准；不要只看浏览器标签页是否滚动。
 - 恢复：在目标 Notebook 重新连接 L4，挂载 Drive，读取 checkpoint 和 `status.json` 后恢复。
 
+### 6. Notebook 只显示启动命令，看不到子进程进度
+
+- 症状：Cell 一直处于运行中，但只显示命令行，launcher 内的状态、render/train 日志没有实时出现在输出区。
+- 原因：Colab 中直接使用 `subprocess.call` 时，子进程输出不一定被 notebook 输出捕获。
+- 修复：`run_live` 使用 `Popen(stdout=PIPE, stderr=STDOUT, text=True, bufsize=1)`，逐行 `print(..., flush=True)`；Drive 日志仍作为持久备份。
+- 验证：Cell 中应持续出现 `STATUS`、训练 loss/PSNR、`[MONITOR]`、render/metrics 输出。
+
 ## 断点恢复决策
 
 - `stage=complete`：跳过该组。
