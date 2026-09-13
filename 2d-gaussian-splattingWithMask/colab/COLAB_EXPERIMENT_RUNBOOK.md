@@ -48,12 +48,14 @@
 - 修复：将 `mediapy` 改为可选导入；静态测试渲染不再要求该包。复用 `chkpnt150000.pth` 并用 `--postprocess-only` 补跑渲染与指标，禁止重训覆盖。
 - B Drive 目录：`zs601_2dgs_B_lidar_parallel_20260912_162033`
 
-### 4. 新 L4 运行时依赖缺失
+### 4. 新 L4 运行时依赖缺失 / Python 3.13 不兼容
 
-- 症状：语法检查通过，但缺少 `plyfile`、`laspy`、`trimesh`、`open3d`、`diff_surfel_rasterization`、`simple_knn`。
-- 原因：新的 Colab 后端是干净环境，Drive 数据和 Python/CUDA 环境不是一回事。
-- 修复：依赖检测与安装拆为独立 Cell；安装完成后再次逐项检查。后续 B/C 命令使用 `--skip-install`，避免训练 Cell 中静默安装。
-- 注意：CUDA 扩展必须从仓库 submodule 构建，且要匹配当前 GPU 架构。
+- 症状：语法检查通过，但缺少 `plyfile`、`laspy`、`trimesh`、`open3d`、`diff_surfel_rasterization`、`simple_knn`。普通包可安装，`open3d` 返回 `No matching distribution found`，两个 2DGS CUDA 扩展构建 wheel 失败。
+- 原因：新的 Colab 后端是干净环境；当前 Python 3.13 没有可用的 `open3d` wheel，且与仓库中的 2DGS CUDA 扩展构建链不兼容。Drive 数据和 Python/CUDA 环境是两回事。
+- 已验证：`plyfile`、`laspy[lazrs]`、`trimesh`、`scikit-image`、`gdown` 在 Python 3.13 安装成功；失败项仅为 `open3d`、`diff-surfel-rasterization`、`simple-knn`。
+- 修复：Colab 选择过去的 Python 3.11/3.12 运行时，同时保留 L4 GPU；再逐项安装依赖和两个 submodule。Notebook 在安装前主动拒绝 Python 3.13，并打印明确提示。
+- 保护：依赖检测与安装拆为独立 Cell，安装完成后再次逐项检查。后续 B/C 命令使用 `--skip-install`，避免训练 Cell 中静默安装。
+- 注意：CUDA 扩展必须从仓库 submodule 构建，且 `TORCH_CUDA_ARCH_LIST=8.9` 匹配 L4。
 
 ### 5. Colab 页面显示未使用 GPU，但 Drive 文件仍变化
 
