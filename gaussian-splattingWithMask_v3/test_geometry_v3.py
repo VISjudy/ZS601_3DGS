@@ -36,7 +36,10 @@ class GeometryTests(unittest.TestCase):
         self.assertFalse(b.normal_loss); self.assertFalse(b.init_flatten)
     def test_c_adds_only_scale_bounds_to_b_preset(self):
         b=config('B'); c=config('C')
-        expected_b={name: name!='scale_bounds' for name in FEATURES}
+        expected_on={'init_normal','init_flatten','orient_cameras','surface_loss',
+                     'tangent_loss','normal_loss','flatten_loss','size_loss',
+                     'pruning','validation_diagnostics'}
+        expected_b={name:name in expected_on for name in FEATURES}
         self.assertEqual({name:getattr(b,name) for name in FEATURES},expected_b)
         self.assertEqual(
             {name:getattr(c,name) for name in FEATURES if name!='scale_bounds'},
@@ -45,7 +48,10 @@ class GeometryTests(unittest.TestCase):
     def test_c_scale_bounds_single_override_off(self):
         c=config('C',['--scale_bounds','off'])
         self.assertFalse(c.scale_bounds)
-        self.assertTrue(all(getattr(c,name) for name in FEATURES if name!='scale_bounds'))
+        b=config('B')
+        self.assertEqual(
+            {name:getattr(c,name) for name in FEATURES if name!='scale_bounds'},
+            {name:getattr(b,name) for name in FEATURES if name!='scale_bounds'})
     def loss(self,name,xyz,scales,q=None):
         a=config('A',['--'+name+'_loss','on','--'+name+'_warmup','0'])
         q=torch.tensor([[1.,0.,0.,0.]],requires_grad=True) if q is None else q

@@ -1,6 +1,6 @@
 """Diagnostic attribute passes using unchanged baseline CUDA. Not depth supervision."""
 from pathlib import Path
-import hashlib, json, math
+import hashlib, json, math, shutil
 import numpy as np
 import torch
 from PIL import Image
@@ -44,6 +44,26 @@ def save_rgb(path,tensor):
     arr=(tensor.detach().clamp(0,1).permute(1,2,0).cpu().numpy()*255).round().astype('uint8')
     Image.fromarray(arr).save(path)
 
+def _copy_pseudo_gt(a,cam,out,stem):
+    root=Path(a.supervision_root or a.source_path)
+    image_path=Path(cam.image_name)
+    candidates={
+        'lidar_depth_gt':root/'supervision'/'depth_preview'/image_path.with_suffix('.png'),
+        'lidar_depth_valid':root/'supervision'/'depth_valid'/image_path.with_suffix('.png'),
+        'lidar_normal_gt':root/'supervision'/'normal'/image_path.with_suffix('.png'),
+        'lidar_normal_valid':root/'supervision'/'normal_valid'/image_path.with_suffix('.png'),
+    }
+    result={}
+    for key,src in candidates.items():
+        dst=out/(stem+'_'+key+'.png')
+        if src.is_file():
+            dst.parent.mkdir(parents=True,exist_ok=True)
+            shutil.copy2(src,dst)
+            result[key]={'status':'copied','source':str(src),'file':dst.name}
+        else:
+            result[key]={'status':'missing','source':str(src),'file':None}
+    return result
+
 @torch.no_grad()
 def export_val(a,iteration,cameras,g,pipe):
     from gaussian_renderer import render
@@ -58,20 +78,25 @@ def export_val(a,iteration,cameras,g,pipe):
         stem=f'val{i:02d}'
         rgb=render(cam,g,pipe,black)['render']
         depth,normal,alpha,valid,nvalid=render_geometry(cam,g,pipe)
-        save_rgb(out/(stem+'_rgb.png'),rgb)
+        if a.val_rgb=='on':
+            save_rgb(out/(stem+'_rgb.png'),rgb)
         ell_stat=None
         if ellipsoids is not None:
             ell_image,ell_stat=ellipsoids.render(cam)
             ell_image.save(out/(stem+'_ellipsoid.png'))
-        save_rgb(out/(stem+'_normal.png'),torch.where(nvalid[None],(normal+1)/2,0.))
+        encoded_normal=torch.where(nvalid[None],(normal+1)/2,0.)
+        if a.val_normal=='on':
+            save_rgb(out/(stem+'_normal.png'),encoded_normal)
         # Fixed color scale across all cameras/iterations; zero is black, far is white.
         gray=torch.nan_to_num(depth,nan=0.).clamp(0,a.depth_visual_max)/a.depth_visual_max
-        save_rgb(out/(stem+'_depth.png'),gray[None].repeat(3,1,1))
+        if a.val_depth=='on':
+            save_rgb(out/(stem+'_depth.png'),gray[None].repeat(3,1,1))
         if a.val_npz=='on':
             np.savez_compressed(out/(stem+'_geometry.npz'),depth_z=depth.cpu().numpy(),
                 normal_camera=normal.cpu().numpy(),alpha=alpha.cpu().numpy(),
                 depth_valid=valid.cpu().numpy(),normal_valid=nvalid.cpu().numpy())
-        if iteration==0: save_rgb(out/(stem+'_gt_masked.png'),cam.original_image.cuda())
+        if iteration==0 and a.val_rgb=='on':
+            save_rgb(out/(stem+'_gt_masked.png'),cam.original_image.cuda())
         mask=cam.alpha_mask.cuda() if cam.alpha_mask is not None else torch.ones_like(rgb[:1])
         if float(mask.sum())<=0:
             raise ValueError(f'Validation camera has no valid mask pixels: {cam.image_name}')
@@ -81,24 +106,45 @@ def export_val(a,iteration,cameras,g,pipe):
         from utils.loss_utils import ssim
         mae=float(((rgb-cam.original_image.cuda()).abs()*mask).sum()/(3*mask.sum()).clamp_min(1))
         zero_mask_ssim=float(ssim(rgb*mask,cam.original_image.cuda()))
+        near_black_valid=((encoded_normal<5/255).all(0)&nvalid)
         metrics={'iteration':iteration,'camera_index':i,'image_name':cam.image_name,
                  'masked_psnr':float(-10*np.log10(max(mse,1e-12))),
-                 'masked_mae':mae,'ssim_zero_mask_full_image':zero_mask_ssim,'count':len(g.get_xyz)}
+                 'masked_mae':mae,'ssim_zero_mask_full_image':zero_mask_ssim,
+                 'valid_depth_fraction':float(valid.float().mean()),
+                 'valid_normal_fraction':float(nvalid.float().mean()),
+                 'normal_near_black_valid_fraction':float(
+                     near_black_valid.float().sum()/nvalid.float().sum().clamp_min(1)),
+                 'count':len(g.get_xyz)}
         append_csv(Path(a.model_path)/'val_metrics.csv',metrics)
         manifest.append({'index':i,'image_name':cam.image_name,'R':np.asarray(cam.R).tolist(),
-            'T':np.asarray(cam.T).tolist(),'valid_depth_fraction':float(valid.float().mean()),
+            'T':np.asarray(cam.T).tolist(),'valid_depth_fraction':metrics['valid_depth_fraction'],
+            'valid_normal_fraction':metrics['valid_normal_fraction'],
+            'normal_near_black_valid_fraction':metrics['normal_near_black_valid_fraction'],
             'masked_psnr':metrics['masked_psnr'],'masked_mae':mae,
-            'ssim_zero_mask_full_image':zero_mask_ssim,'ellipsoid':ell_stat})
+            'ssim_zero_mask_full_image':zero_mask_ssim,'ellipsoid':ell_stat,
+            'pseudo_gt':_copy_pseudo_gt(a,cam,out,stem)})
     append_csv(Path(a.model_path)/'val_metrics.csv',{'iteration':iteration,'camera_index':-1,
         'image_name':'MEAN','masked_psnr':float(np.mean([m['masked_psnr'] for m in manifest])),
         'masked_mae':float(np.mean([m['masked_mae'] for m in manifest])),
         'ssim_zero_mask_full_image':float(np.mean([m['ssim_zero_mask_full_image'] for m in manifest])),
+        'valid_depth_fraction':float(np.mean([m['valid_depth_fraction'] for m in manifest])),
+        'valid_normal_fraction':float(np.mean([m['valid_normal_fraction'] for m in manifest])),
+        'normal_near_black_valid_fraction':float(np.mean(
+            [m['normal_near_black_valid_fraction'] for m in manifest])),
         'count':len(g.get_xyz)})
     (out/'manifest.json').write_text(json.dumps({'iteration':iteration,'units':a.units,
         'depth':'opacity-normalized expected Gaussian-center camera z; not unbiased surface depth',
         'normal':'camera coordinates, oriented toward this camera, RGB=(normal+1)/2',
-        'depth_display_range':[0,a.depth_visual_max],'cameras':manifest},indent=2),encoding='utf-8')
-    print(f'[VAL] iter={iteration} RGB/normal/depth/ellipsoid={a.val_ellipsoids} raw_npz={a.val_npz}: {out}',flush=True)
+        'depth_display_range':[0,a.depth_visual_max],
+        'outputs':{'rgb':a.val_rgb,'depth':a.val_depth,'normal':a.val_normal,
+                   'ellipsoid_1sigma':a.val_ellipsoids,'raw_npz':a.val_npz},
+        'cameras':manifest},indent=2),encoding='utf-8')
+    print('[VAL] '+json.dumps({'iteration':iteration,'path':str(out),
+        'rgb':a.val_rgb,'depth':a.val_depth,'normal':a.val_normal,
+        'ellipsoid_1sigma':a.val_ellipsoids,'raw_npz':a.val_npz,
+        'pseudo_gt_copied':sum(
+            item['status']=='copied' for cam in manifest
+            for item in cam['pseudo_gt'].values())},ensure_ascii=False),flush=True)
 
 
 def _masked_metrics(cam,rgb):
@@ -139,7 +185,7 @@ def export_final_test(a,iteration,cameras,g,pipe,input_identity):
         raise ValueError('Final test requires a nonempty explicit test camera list')
     out=Path(a.model_path)/'test_final'/f'iteration_{iteration:06d}'
     out.mkdir(parents=True,exist_ok=False)
-    metric_path=out/'test_metrics.csv'
+    metric_path=out/'test_metrics_per_camera.csv'
     black=torch.zeros(3,device='cuda')
     records=[]
     for i,cam in enumerate(cameras):

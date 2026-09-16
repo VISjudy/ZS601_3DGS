@@ -60,6 +60,11 @@ def load_data(a):
     centers=np.stack([-c.R@c.T for c in ti])
     identity={k:sha256(getattr(a,k)) for k in ('point_cloud','train_file','val_file','cameras_file')}
     if a.test_file: identity['test_file']=sha256(a.test_file)
+    if a.data_manifest:
+        manifest_path=Path(a.data_manifest)
+        if not manifest_path.is_file(): raise FileNotFoundError(manifest_path)
+        identity['data_manifest']=sha256(manifest_path)
+    identity['preprocess_version']=a.preprocess_version
     # Content identity survives re-extraction on a new Colab runtime (mtime does not).
     metadata=[]
     for c in ti+vi+xi:

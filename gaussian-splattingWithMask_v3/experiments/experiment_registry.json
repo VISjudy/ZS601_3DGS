@@ -1,0 +1,167 @@
+{
+  "schema_version": "1.1",
+  "project": "ZS601 3DGS v3",
+  "evidence_policy": "Only values backed by local logs, manifests, Drive readback, or experiment summaries may be marked verified. Missing values remain null.",
+  "updated_at": "2026-09-16",
+  "protocol": {
+    "target_iterations": 150000,
+    "validation_interval": 5000,
+    "expected_validation_timepoints": 31,
+    "checkpoint_interval": 50000,
+    "expected_checkpoints": [
+      50000,
+      100000,
+      150000
+    ],
+    "validation_camera_count": 10,
+    "formal_gpu": "NVIDIA L4",
+    "smoke_iterations": 200
+  },
+  "experiments": [
+    {
+      "group": "original",
+      "purpose": "原始 3DGS 行为一致性对照；当前标准化 runner 仍需 200 步等价性验收",
+      "planned_features": [
+        "validation_diagnostics"
+      ],
+      "status": "待核验",
+      "run_id": null,
+      "git_commit": null,
+      "dataset_manifest_sha256": null,
+      "drive_output": null,
+      "evidence": [],
+      "metrics": {}
+    },
+    {
+      "group": "A",
+      "purpose": "LiDAR 法向与扁平初始化、相机定向、仅剪枝的 v3 baseline",
+      "planned_features": [
+        "init_normal",
+        "init_flatten",
+        "orient_cameras",
+        "pruning",
+        "validation_diagnostics"
+      ],
+      "status": "200 步冒烟已完成，150000 步未核验",
+      "run_id": "smoke_A_567d609871",
+      "git_commit": "619c126c11c1a7fb7c5784531b5b46508515e529",
+      "dataset_manifest_sha256": null,
+      "drive_output": "MyDrive/LCCDataset/zs601_output/gaussian-splattingWithMask_v3_cff221ccfb/smoke_A_567d609871",
+      "evidence": [
+        "experiments/2026-09-10/v3-ab-colab-smoke/summary.md"
+      ],
+      "metrics": {}
+    },
+    {
+      "group": "B",
+      "purpose": "A 加五项几何约束",
+      "planned_features": [
+        "init_normal",
+        "init_flatten",
+        "orient_cameras",
+        "pruning",
+        "surface_loss",
+        "tangent_loss",
+        "normal_loss",
+        "flatten_loss",
+        "size_loss",
+        "validation_diagnostics"
+      ],
+      "status": "150000 步已完成",
+      "run_id": "zs601_B_5cc0cf5547/formal_B",
+      "git_commit": "d1df6c3e06f085abf2567b07eb78eef8a8ca1441",
+      "dataset_manifest_sha256": null,
+      "drive_output": "MyDrive/LCCDataset/zs601_output/zs601_B_5cc0cf5547/formal_B",
+      "evidence": [
+        "experiments/2026-09-10/v3-ab-formal/summary.md",
+        "experiments/2026-09-10/v3-ab-formal/b_final_verification.json"
+      ],
+      "metrics": {
+        "val_masked_psnr": 24.08066588277148,
+        "val_masked_mae": 0.04467417802661657,
+        "val_ssim_zero_mask_full_image": 0.8277297258377075,
+        "gaussian_count": 190888
+      }
+    },
+    {
+      "group": "C",
+      "purpose": "B 加按 LiDAR 局部间距的硬尺度上限",
+      "planned_features": [
+        "init_normal",
+        "init_flatten",
+        "orient_cameras",
+        "pruning",
+        "surface_loss",
+        "tangent_loss",
+        "normal_loss",
+        "flatten_loss",
+        "size_loss",
+        "scale_bounds",
+        "validation_diagnostics"
+      ],
+      "status": "150000 步已完成",
+      "run_id": "zs601_C_fe210320ed/formal_C",
+      "git_commit": "4c81636bc0608add0d0401cc400fc207f6ed22dc",
+      "dataset_manifest_sha256": null,
+      "drive_output": "MyDrive/LCCDataset/zs601_output/zs601_C_fe210320ed/formal_C",
+      "evidence": [
+        "experiments/2026-09-11/v3-c-scale-bounds/summary.md"
+      ],
+      "metrics": {
+        "gaussian_count": 193943
+      }
+    },
+    {
+      "group": "D",
+      "purpose": "C 加 LiDAR 平面约束的受控增密",
+      "planned_features": [
+        "init_normal",
+        "init_flatten",
+        "orient_cameras",
+        "pruning",
+        "surface_loss",
+        "tangent_loss",
+        "normal_loss",
+        "flatten_loss",
+        "size_loss",
+        "scale_bounds",
+        "surface_densify",
+        "validation_diagnostics"
+      ],
+      "status": "200 步通过；正式运行最后核验到 24500 步",
+      "run_id": "zs601_D_cli_20260911_162905_splitfix1",
+      "git_commit": "ca00a4eda08e8967a47ad7002060f0c8cce1e18c",
+      "dataset_manifest_sha256": null,
+      "drive_output": "MyDrive/LCCDataset/zs601_output/zs601_D_cli_20260911_162905_splitfix1",
+      "evidence": [
+        "experiments/2026-09-11/v3-d-formal-cli/summary.md"
+      ],
+      "metrics": {}
+    },
+    {
+      "group": "E",
+      "purpose": "C 加遮挡感知的 LiDAR camera-z 深度监督",
+      "planned_features": [
+        "init_normal",
+        "init_flatten",
+        "orient_cameras",
+        "pruning",
+        "surface_loss",
+        "tangent_loss",
+        "normal_loss",
+        "flatten_loss",
+        "size_loss",
+        "scale_bounds",
+        "lidar_depth_loss",
+        "validation_diagnostics"
+      ],
+      "status": "待跑",
+      "run_id": null,
+      "git_commit": null,
+      "dataset_manifest_sha256": null,
+      "drive_output": null,
+      "evidence": [],
+      "metrics": {}
+    }
+  ]
+}

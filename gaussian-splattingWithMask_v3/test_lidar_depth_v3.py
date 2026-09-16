@@ -6,7 +6,7 @@ import numpy as np
 import torch
 from PIL import Image
 
-from arguments_v3 import preset_features
+from experiment_presets_v3 import resolve_feature_flags
 from lidar_depth_v3 import (
     camera_to_world_np,
     conservative_fill,
@@ -25,7 +25,7 @@ from lidar_depth_v3 import (
 
 class LidarDepthTests(unittest.TestCase):
     def test_e_preset_enables_c_geometry_and_depth(self):
-        e = preset_features('E')
+        e = resolve_feature_flags('E')
         for name in (
             'surface_loss', 'tangent_loss', 'normal_loss',
             'flatten_loss', 'size_loss', 'scale_bounds',

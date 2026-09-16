@@ -3,7 +3,8 @@ from pathlib import Path
 import csv
 import json
 
-from arguments_v3 import FEATURES, preset_features
+from arguments_v3 import FEATURES
+from experiment_presets_v3 import resolve_feature_flags
 
 
 UPSTREAM_DEFAULTS = {
@@ -115,7 +116,7 @@ def _depth_loss_stats(path):
 
 def write_experiment_summary(a, iteration, test_summary, test_dir):
     out = Path(a.model_path)
-    baseline_features = preset_features('A')
+    baseline_features = resolve_feature_flags('A', feature_names=FEATURES)
     active = {key: bool(getattr(a, key)) for key in FEATURES}
     feature_delta = {
         key: (baseline_features[key], active[key])
@@ -311,7 +312,7 @@ def write_experiment_summary(a, iteration, test_summary, test_dir):
         '',
         '## 产物',
         '',
-        f'- 完整 test 指标：{relative_test / "test_metrics.csv"}',
+        f'- 完整 test 指标：{relative_test / "test_metrics_per_camera.csv"}',
         f'- 最差 10 相机诊断：{relative_test}',
         '- 训练损失：loss_log.csv',
         '- 固定验证指标：val_metrics.csv',
@@ -323,5 +324,35 @@ def write_experiment_summary(a, iteration, test_summary, test_dir):
         )
     report = out / 'experiment_summary.md'
     report.write_text('\n'.join(lines) + '\n', encoding='utf-8')
+
+    # Machine-readable and paper-ready aggregate result tables.
+    aggregate_rows=[]
+    for split,summary in [('test',test_summary)]:
+        for kind,row in summary['aggregates'].items():
+            aggregate_rows.append({
+                'experiment_group':a.experiment,'split':split,'aggregate':kind,
+                'iteration':iteration,'gaussian_count':row['count'],
+                'masked_psnr':row['masked_psnr'],'masked_mae':row['masked_mae'],
+                'ssim_zero_mask_full_image':row['ssim_zero_mask_full_image'],
+                'comparison_identity':summary['comparison_identity']['sha256']})
+    fieldnames=list(aggregate_rows[0])
+    with (out/'results_table.csv').open('w',newline='',encoding='utf-8') as handle:
+        writer=csv.DictWriter(handle,fieldnames=fieldnames)
+        writer.writeheader(); writer.writerows(aggregate_rows)
+    mean_row=aggregate_rows[0]
+    table_lines=[
+        '| Group | Iteration | Gaussians | PSNR | MAE | SSIM |',
+        '|---|---:|---:|---:|---:|---:|',
+        f"| {a.experiment} | {iteration} | {mean_row['gaussian_count']} | {mean_row['masked_psnr']:.4f} | {mean_row['masked_mae']:.6f} | {mean_row['ssim_zero_mask_full_image']:.6f} |",
+    ]
+    (out/'results_table.md').write_text('\n'.join(table_lines)+'\n',encoding='utf-8')
+    latex=[
+        r'\\begin{tabular}{lrrrrr}',r'\\toprule',
+        r'Group & Iteration & Gaussians & PSNR & MAE & SSIM \\\\',
+        r'\\midrule',
+        f"{a.experiment} & {iteration} & {mean_row['gaussian_count']} & {mean_row['masked_psnr']:.4f} & {mean_row['masked_mae']:.6f} & {mean_row['ssim_zero_mask_full_image']:.6f} \\\\",
+        r'\\bottomrule',r'\\end{tabular}',
+    ]
+    (out/'results_table.tex').write_text('\n'.join(latex)+'\n',encoding='utf-8')
     print(f'[SUMMARY] {report}', flush=True)
     return report
