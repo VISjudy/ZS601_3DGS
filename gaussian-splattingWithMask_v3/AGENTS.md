@@ -17,10 +17,13 @@
 - 参数：`arguments_v3.py`
 - 数据与几何：`data_v3.py`、`geometry_v3.py`
 - 渲染与运行状态：`render_v3.py`、`runtime_v3.py`
+- 环境与实验流程：`docs/ENVIRONMENT_AND_WORKFLOW.md`
 - 输入规范：`docs/DATASET_INPUT.md`
 - 预处理：`docs/DATA_PREPROCESSING.md`
 - 验证诊断：`docs/VAL_DIAGNOSTICS.md`
 - 实验登记：`experiments/experiment_registry.json`
+- Val 诊断补渲染：`scripts/render_val_diagnostics_v3.py`
+- 运行产物验收：`scripts/verify_run_outputs_v3.py`
 - 总记录生成：`scripts/build_experiment_record_docx.py`
 
 ## 标准流程

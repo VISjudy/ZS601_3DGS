@@ -26,6 +26,7 @@
 
 - 项目当前状态：仓库根目录 `prompt/registers/experiment-state.md`
 - 实验历史：仓库根目录 `experiments/INDEX.md`
+- 环境与标准流程：`docs/ENVIRONMENT_AND_WORKFLOW.md`
 - 数据规范：`docs/DATASET_INPUT.md`
 - 预处理规范：`docs/DATA_PREPROCESSING.md`
 - 验证规范：`docs/VAL_DIAGNOSTICS.md`
