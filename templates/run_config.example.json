@@ -1,0 +1,36 @@
+{
+  "schema_version": "3dgs-experiment-standard/1",
+  "run_id": "PROJECT_GROUP_TIMESTAMP",
+  "experiment_group": "custom",
+  "git_commit": "<immutable commit>",
+  "seed": 42,
+  "project_root": "/content/project",
+  "dataset_manifest": {
+    "path": "/content/datasets/scene/manifest.json",
+    "sha256": "<sha256>"
+  },
+  "feature_overrides": {
+    "flat_initialization": "auto",
+    "surface_loss": "on",
+    "depth_loss": "off"
+  },
+  "resolved_feature_flags": {
+    "flat_initialization": true,
+    "surface_loss": true,
+    "depth_loss": false
+  },
+  "key_parameters": {
+    "iterations": 150000,
+    "position_lr_max_steps": 150000,
+    "val_interval": 5000,
+    "checkpoint_interval": 50000
+  },
+  "validation": {
+    "camera_count": 10,
+    "camera_list_sha256": "<sha256>",
+    "start_iteration": 0,
+    "interval": 5000,
+    "ellipsoid_sigma": 1.0
+  },
+  "output_directory": "<new directory>"
+}

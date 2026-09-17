@@ -1,0 +1,41 @@
+{
+  "schema_version": "3dgs-experiment-standard/1",
+  "required_files": [
+    "run_config.json",
+    "run_manifest.json",
+    "environment.json",
+    "loss_log.csv",
+    "training_progress.csv",
+    "val_metrics.csv",
+    "geometry_metrics.csv"
+  ],
+  "validation": {
+    "directory": "val/iteration_{iteration:06d}",
+    "interval": 5000,
+    "start": 0,
+    "camera_count": 10,
+    "artifacts": [
+      "rgb_render.png",
+      "rgb_gt.png",
+      "ellipsoid_1sigma.png",
+      "depth_render.png",
+      "normal_render.png"
+    ]
+  },
+  "formal": {
+    "iterations": 150000,
+    "checkpoint_interval": 50000,
+    "test_metrics": "test_final/iteration_{final}/test_metrics_per_camera.csv",
+    "worst_count": 10,
+    "summary_files": [
+      "results_table.csv",
+      "results_table.md",
+      "results_table.tex",
+      "experiment_summary.md"
+    ]
+  },
+  "completion": [
+    "verification.json",
+    "completed.json"
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "schema_version": "3dgs-experiment-standard/1",
+  "project": "<project>",
+  "baseline": {
+    "name": "original",
+    "commit": "<commit>",
+    "evidence": null
+  },
+  "experiments": [
+    {
+      "group": "A",
+      "status": "planned",
+      "objective": "<objective>",
+      "changes": [
+        "<one controlled change>"
+      ],
+      "output": null,
+      "evidence": null
+    },
+    {
+      "group": "B",
+      "status": "pending",
+      "objective": "<objective>",
+      "changes": [
+        "<change relative to baseline>"
+      ],
+      "output": null,
+      "evidence": null
+    }
+  ]
+}
