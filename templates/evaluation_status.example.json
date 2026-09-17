@@ -1,0 +1,5 @@
+{
+  "schema_version": "3dgs-experiment-standard/1",
+  "visual_test": {"status": "completed|skipped", "reason": null, "adapter": "<adapter or command>"},
+  "geometry_test": {"status": "completed|skipped", "reason": null, "adapter": "<adapter or command>"}
+}

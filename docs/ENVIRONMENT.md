@@ -26,3 +26,7 @@ python -m pip install -v --no-build-isolation <extension-path>
 ## 版本变化
 
 Python、PyTorch、CUDA、编译器或驱动任一变化，都视为新环境。旧环境的成功记录只能作为参考，不能替代本次验证。
+
+## 通用评估工具依赖
+
+安装 `requirements-tools.txt` 中的 NumPy、SciPy 和 plyfile。SciPy 用于大规模最近邻查询；缺少 SciPy 时，几何脚本只对小点集使用低速回退。项目自有数据格式通过 adapter 转成 PLY、NPY 或 NPZ 后再评估。

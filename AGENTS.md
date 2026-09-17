@@ -26,7 +26,7 @@
 5. 冒烟通过后在新目录运行正式实验。
 6. 固定验证相机在 iteration 0、每 5000 步和最终步输出诊断。
 7. 每 50000 步保存 checkpoint；除非项目另有明确登记，不高频占用云存储。
-8. 正式结束后计算完整 test 指标、最差 10 相机诊断和论文格式结果表。
+8. 正式结束后计算完整 test 视觉指标、最终点云几何指标、最差 10 相机诊断和论文格式结果表。
 9. 复制到持久存储后回读验证，随后释放 GPU。
 
 ## 4. 统一产物
@@ -37,7 +37,8 @@
 - `loss_log.csv`、`training_progress.csv`、`val_metrics.csv`、`geometry_metrics.csv`
 - 固定验证相机的 RGB、1σ 椭球、深度、法向和相应 valid mask
 - `checkpoints/iteration_*.pth` 和模型几何文件
-- `test_final/test_metrics_per_camera.csv`、`test_summary.json`
+- `test_final/test_metrics_per_camera.csv`、`test_summary.json`：完整测试集 PSNR/SSIM/MAE
+- `geometry_test/geometry_metrics.json`、`geometry_metrics.csv`、`manifest.json`：最终模型相对参考点云的双向几何评估
 - 最差 10 个测试相机的 RGB、椭球、深度和法向
 - `results_table.csv`、`results_table.md`、`results_table.tex`
 - `experiment_summary.md`、`verification.json`、`completed.json`
@@ -45,8 +46,9 @@
 ## 5. 完成判定
 
 - 页面显示、进程存在、单条日志或一个 checkpoint 都不代表实验完成。
-- “完成”必须有有限 loss、预期 checkpoint、最终 test、总结、completed 标记和持久存储回读证据。
-- 缺少证据时使用“待核验”或 `null`，不得补造结果。
+- “完成”必须有有限 loss、预期 checkpoint、最终 test 视觉指标、最终点云几何指标、总结、completed 标记和持久存储回读证据。
+- 项目数据格式与模板不一致时，在 adapter 中转换到统一相机、图像或 Nx3 点云接口，不要求源项目改目录。
+- 指标因格式、依赖或数据缺失确实无法运行时可以跳过，但必须写 `evaluation_status.json`，包含 `status=skipped` 和具体原因；汇总表保留 `null`，不得静默缺失或补造结果。
 - 一个实验组完成不等于整组对比完成。
 
 ## 6. 任务索引

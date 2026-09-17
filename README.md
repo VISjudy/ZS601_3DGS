@@ -12,6 +12,7 @@
 - `scripts/check_environment.py`：记录 Python、GPU、PyTorch、CUDA 和依赖。
 - `scripts/create_run.py`：创建不可覆盖的新实验目录和初始 manifest。
 - `scripts/render_val_diagnostics.py`：统一 Val RGB、1σ 椭球、深度和法向渲染入口。
+- `scripts/evaluate_geometry.py`：对最终高斯中心或表面点与参考点云计算双向几何指标。
 - `scripts/verify_run_outputs.py`：按统一产物契约验收冒烟或正式训练。
 - `scripts/summarize_experiment.py`：从真实 CSV/JSON 生成结果表和简要总结。
 - `scripts/adapters/zs601_v3_adapter.py`：当前 ZS601 v3 项目的接入示例。
@@ -31,6 +32,7 @@ python scripts/check_environment.py --require-gpu-substring L4 --output environm
 python scripts/create_run.py --root output --run-id EXP_A_001 --group A \
   --git-commit <commit> --seed 42
 python scripts/verify_run_outputs.py output/EXP_A_001 --profile smoke --iterations 200
+python scripts/evaluate_geometry.py --prediction output/EXP_A_150K/point_cloud/iteration_150000/point_cloud.ply --reference /data/reference.ply --reference-role heldout_lidar --unit meters --output output/EXP_A_150K/geometry_test
 python scripts/verify_run_outputs.py output/EXP_A_150K --profile formal --iterations 150000
 python scripts/summarize_experiment.py output/EXP_A_150K
 ```

@@ -1,4 +1,5 @@
 import csv, json, subprocess, sys, tempfile, unittest
+import numpy as np
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -57,6 +58,8 @@ class StandardTests(unittest.TestCase):
             write_csv(run / "training_progress.csv", ["iteration", "elapsed_seconds", "gaussian_count"], [{"iteration": 150000, "elapsed_seconds": 50, "gaussian_count": 100}])
             test = run / "test_final" / "iteration_150000"; test.mkdir(parents=True)
             write_csv(test / "test_metrics_per_camera.csv", ["image_name", "psnr", "ssim", "mae"], [{"image_name": "a", "psnr": 20, "ssim": .8, "mae": .1}, {"image_name": "b", "psnr": 22, "ssim": .9, "mae": .05}])
+            geometry = run / "geometry_test"; geometry.mkdir()
+            (geometry / "geometry_metrics.json").write_text(json.dumps({"unit": "meters", "reference_role": "heldout_lidar", "independent_geometry_gt": True, "metrics": {"chamfer_l1": 0.01, "chamfer_l2": 0.0002, "accuracy_pred_to_ref": {"p95": 0.02}, "completeness_ref_to_pred": {"p95": 0.03}, "fscore": [{"threshold": 0.04, "precision": 0.9, "recall": 0.8, "fscore": 0.847}]}}), encoding="utf-8")
             result = self.run_script("summarize_experiment.py", run)
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertIn("21", (run / "results_table.csv").read_text(encoding="utf-8"))
@@ -83,11 +86,41 @@ class StandardTests(unittest.TestCase):
             write_csv(final / "test_metrics_per_camera.csv", ["image_name", "psnr"], [{"image_name": "a", "psnr": 20}])
             (final / "test_summary.json").write_text("{}", encoding="utf-8")
             for i in range(10): (final / f"worst_{i:02d}_rgb.png").write_bytes(b"png")
+            geometry = run / "geometry_test"; geometry.mkdir()
+            report = {"unit": "meters", "reference_role": "heldout_lidar", "metrics": {"chamfer_l1": 0.0}}
+            (geometry / "geometry_metrics.json").write_text(json.dumps(report), encoding="utf-8")
+            (geometry / "geometry_metrics.csv").write_text("chamfer_l1\n0\n", encoding="utf-8")
+            (geometry / "manifest.json").write_text("{}", encoding="utf-8")
             for name in ("results_table.csv", "results_table.md", "results_table.tex", "experiment_summary.md"):
                 (run / name).write_text("ok", encoding="utf-8")
             result = self.run_script("verify_run_outputs.py", run, "--profile", "formal", "--iterations", "150000")
             self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
 
+    def test_geometry_evaluator_identical_clouds(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); points = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0]], dtype=float)
+            np.save(root / "prediction.npy", points); np.save(root / "reference.npy", points)
+            result = self.run_script("evaluate_geometry.py", "--prediction", root / "prediction.npy",
+                                     "--reference", root / "reference.npy", "--reference-role", "initialization_lidar",
+                                     "--unit", "meters", "--output", root / "geometry_test")
+            self.assertEqual(result.returncode, 0, result.stderr)
+            report = json.loads((root / "geometry_test" / "geometry_metrics.json").read_text(encoding="utf-8"))
+            self.assertEqual(report["metrics"]["chamfer_l1"], 0.0)
+            self.assertFalse(report["independent_geometry_gt"])
+
+    def test_formal_verifier_accepts_explicit_skips(self):
+        with tempfile.TemporaryDirectory() as directory:
+            run = Path(directory) / "formal"; self.make_smoke(run)
+            # Convert the compact smoke fixture to a 200-step formal fixture.
+            (run / "evaluation_status.json").write_text(json.dumps({
+                "visual_test": {"status": "skipped", "reason": "renderer has no test split"},
+                "geometry_test": {"status": "skipped", "reason": "reference point cloud unavailable"}
+            }), encoding="utf-8")
+            for name in ("results_table.csv", "results_table.md", "results_table.tex", "experiment_summary.md"):
+                (run / name).write_text("ok", encoding="utf-8")
+            result = self.run_script("verify_run_outputs.py", run, "--profile", "formal", "--iterations", "200")
+            self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+            self.assertIn("skipped_geometry_test", result.stdout)
     def test_adapter_driver_writes_manifest(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory); adapter = root / "adapter.py"

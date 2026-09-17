@@ -31,6 +31,15 @@
 | SSIM | `<value>` | `<value>` | `<delta>` |
 | MAE | `<value>` | `<value>` | `<delta>` |
 
+## 最终几何测试
+
+- 参考点云角色：`<initialization_lidar/heldout_lidar/mesh_gt>`
+- 单位与对齐：`<unit and alignment>`
+
+| Accuracy P95 | Completeness P95 | Chamfer-L1 | Chamfer-L2 | F-score@阈值 |
+|---:|---:|---:|---:|---:|
+| `<value>` | `<value>` | `<value>` | `<value>` | `<value>` |
+
 ## 几何与可视化分析
 
 - `<observation linked to files/metrics>`

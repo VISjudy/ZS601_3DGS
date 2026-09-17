@@ -22,3 +22,9 @@ def render_validation(*, run_config, model_path, output_dir, iteration, sigma):
 6. `sigma=1.0` 表示沿高斯三个主轴显示一个标准差。不要用固定球体代替真实尺度和旋转。
 
 当前项目示例位于 `scripts/adapters/zs601_v3_adapter.py`。其他项目复制该文件并替换三处：相机加载、模型加载、诊断导出。
+
+## 数据格式适配
+
+Adapter 负责吸收项目差异。它可以读取项目原有相机类、checkpoint、PLY 变体或自定义张量，并转换成标准诊断接口。不要为了套模板移动或改写原始数据。点云几何评估的标准中间表示为有限的 `N×3` 坐标，可选 `N×3` 法向和三个 Gaussian scale 字段；必须同时提供坐标单位和对齐说明。
+
+某个输出无法可靠生成时，adapter 应返回或写出清晰的 `skipped` 状态和原因。调用端继续处理其余指标，最终由 `evaluation_status.json` 和实验总结统一披露。

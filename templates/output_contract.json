@@ -14,28 +14,20 @@
     "interval": 5000,
     "start": 0,
     "camera_count": 10,
-    "artifacts": [
-      "rgb_render.png",
-      "rgb_gt.png",
-      "ellipsoid_1sigma.png",
-      "depth_render.png",
-      "normal_render.png"
-    ]
+    "artifacts": ["rgb_render.png", "rgb_gt.png", "ellipsoid_1sigma.png", "depth_render.png", "normal_render.png"]
   },
   "formal": {
     "iterations": 150000,
     "checkpoint_interval": 50000,
     "test_metrics": "test_final/iteration_{final}/test_metrics_per_camera.csv",
     "worst_count": 10,
-    "summary_files": [
-      "results_table.csv",
-      "results_table.md",
-      "results_table.tex",
-      "experiment_summary.md"
-    ]
+    "geometry": {
+      "directory": "geometry_test",
+      "required_files": ["geometry_metrics.json", "geometry_metrics.csv", "manifest.json"],
+      "required_metrics": ["accuracy_pred_to_ref", "completeness_ref_to_pred", "chamfer_l1", "chamfer_l2", "fscore"],
+      "identity_fields": ["unit", "reference_role", "alignment", "inputs"]
+    },
+    "summary_files": ["results_table.csv", "results_table.md", "results_table.tex", "experiment_summary.md"]
   },
-  "completion": [
-    "verification.json",
-    "completed.json"
-  ]
+  "completion": ["verification.json", "completed.json"]
 }

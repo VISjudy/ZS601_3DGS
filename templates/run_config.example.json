@@ -5,32 +5,15 @@
   "git_commit": "<immutable commit>",
   "seed": 42,
   "project_root": "/content/project",
-  "dataset_manifest": {
-    "path": "/content/datasets/scene/manifest.json",
-    "sha256": "<sha256>"
-  },
-  "feature_overrides": {
-    "flat_initialization": "auto",
-    "surface_loss": "on",
-    "depth_loss": "off"
-  },
-  "resolved_feature_flags": {
-    "flat_initialization": true,
-    "surface_loss": true,
-    "depth_loss": false
-  },
-  "key_parameters": {
-    "iterations": 150000,
-    "position_lr_max_steps": 150000,
-    "val_interval": 5000,
-    "checkpoint_interval": 50000
-  },
-  "validation": {
-    "camera_count": 10,
-    "camera_list_sha256": "<sha256>",
-    "start_iteration": 0,
-    "interval": 5000,
-    "ellipsoid_sigma": 1.0
+  "dataset_manifest": {"path": "/content/datasets/scene/manifest.json", "sha256": "<sha256>"},
+  "feature_overrides": {"flat_initialization": "auto", "surface_loss": "on", "depth_loss": "off"},
+  "resolved_feature_flags": {"flat_initialization": true, "surface_loss": true, "depth_loss": false},
+  "key_parameters": {"iterations": 150000, "position_lr_max_steps": 150000, "val_interval": 5000, "checkpoint_interval": 50000},
+  "validation": {"camera_count": 10, "camera_list_sha256": "<sha256>", "start_iteration": 0, "interval": 5000, "ellipsoid_sigma": 1.0},
+  "final_evaluation": {
+    "visual_metrics": ["psnr", "ssim", "mae"],
+    "reference_geometry": {"path": "<reference point cloud>", "sha256": "<sha256>", "role": "initialization_lidar|heldout_lidar|mesh_gt|other", "unit": "meters|scene", "alignment": "<transform or already aligned>"},
+    "distance_thresholds": [0.02, 0.04, 0.08]
   },
   "output_directory": "<new directory>"
 }
