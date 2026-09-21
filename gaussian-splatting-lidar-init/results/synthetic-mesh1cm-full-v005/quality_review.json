@@ -1,0 +1,44 @@
+{
+  "status": "ARTIFACTS_VALID_APPEARANCE_LIMITATION_REQUIRES_FOLLOWUP",
+  "all_200_cameras_exact": true,
+  "comparison_views": 200,
+  "means": {
+    "old_3cm_scale05_psnr": 21.005499196135425,
+    "new_1cm_scale05_psnr": 19.402595903080233,
+    "delta_psnr": -1.6029032930551923,
+    "old_ssim": 0.7454252585768699,
+    "new_ssim": 0.7563437359035015,
+    "old_gap_pct": 30.334701460965707,
+    "new_gap_pct": 0.23429532378158846,
+    "new_masked_psnr": 19.44785013008756
+  },
+  "psnr_improved_views": 101,
+  "psnr_worsened_views": 99,
+  "worst_delta": {
+    "name": "003193.png",
+    "old_3cm_scale05_psnr": 21.05572408174483,
+    "new_1cm_scale05_psnr": 4.480874927904408,
+    "delta_psnr": -16.574849153840425,
+    "old_ssim": 0.7848747372627258,
+    "new_ssim": 0.4551076889038086,
+    "old_gap_pct": 41.60776737364621,
+    "new_gap_pct": 0.16569833032490974,
+    "new_masked_psnr": 4.473762789984304
+  },
+  "glass_semantic_evidence": {
+    "cabinet_glass_components": 16,
+    "sampled_points": 92614,
+    "fallback_points": 92514,
+    "near_white_points": 92514,
+    "median_rgb": [
+      250.0,
+      253.0,
+      252.0
+    ],
+    "opacity_target": 0.999999
+  },
+  "observation": "003193 cabinet glass becomes bright opaque occlusion; most of those pixels still pass alpha95 mask.",
+  "mechanism": "Full mesh cloud includes glass surfaces, many colored from white material fallback; near-unit opacity treats those glass points as opaque. This is consistent with the observed cabinet failure.",
+  "conclusion": "Full 200 render is complete, but lower gap ratio does not mean better RGB at every view. Do not claim full-scene appearance acceptance or training quality. Preserve this selected run; do not silently modify point cloud or opacity.",
+  "followup": "Separate or exclude transmissive glass surfaces before a new initialization experiment, or apply a separate semantic training mask. Any such change is a different configuration, not this completed comparison."
+}

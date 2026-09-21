@@ -1,5 +1,20 @@
 # Colored LiDAR initialization and virtual-view rendering
 
+Latest: [mesh 1 cm, scale 0.5, full 200-view run](results/synthetic-mesh1cm-full-v005/README.md)
+and [four-configuration Black RGB / mask comparison](results/synthetic-four-config-mask-v001/README.md).
+The user selected scale 0.5 after the four-camera comparison; all 200 renders and
+2000 channel PNGs are locally verified. The actual executed notebook is included.
+The full run exposes opaque white glass artifacts: lower mask-gap ratios do not
+guarantee better appearance, and full-scene PSNR is lower than the old 3 cm run.
+Read the quality review before using these pseudo-images for training. The user
+defines grain as zero-valued valid-mask ratio (alpha < 0.95), with strict alpha=0
+reported separately. Formal training retains the original 3 cm initialization.
+
+Earlier four-camera records: [scale 1.0 baseline](results/synthetic-mesh1cm-smoke-v003/README.md),
+[paired scale 0.5 smoke](results/synthetic-mesh1cm-scale05-v004/README.md). Their
+review gates describe the historical smoke stage, now followed by the authorized
+full run. The original v001 baseline is documented below.
+
 This folder adapts the supplied `render_from_sparse_v4.py` for the ZS601 synthetic
 dataset. It creates and reloads an **iteration-0** Gaussian PLY, then renders the
 exact 200 `virtual_near` COLMAP cameras. **No optimizer or training step runs.**

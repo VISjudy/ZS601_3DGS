@@ -1,0 +1,19 @@
+{
+  "points": 7180820,
+  "voxel_size_m": 0.01,
+  "geometry_source": "Complete evaluated Blender mesh; no depth backprojection or train-cloud upsampling",
+  "source_scene_sha256": "e27c037aa4b5937d4f2a586638539d22277d9ef689657e93c41a7909962d887a",
+  "training_cloud_sha256": "21c10822a04adf116f05efcb27351d0b210b69bf9dcf1cc5c4d5c5dff1ae6f88",
+  "formal_training_init": "original 3cm cloud",
+  "virtual_render_init": "this 1cm mesh cloud",
+  "source_views_allowed": "train only",
+  "test_validation_virtual_rgb_used_for_color": false,
+  "projected_points": 2605400,
+  "fallback_points": 4575420,
+  "projected_fraction": 0.36282764363958436,
+  "color_method": "bilinear sRGB from highest abs(n dot ray)/camera-Z^2 training observation; all four interpolation pixels must be valid opaque geometry; exact mesh ray visibility within1mm",
+  "fallback": "sRGB-encoded constant material base color for unobserved/transparent surfaces; linked textures and lighting are not baked there",
+  "opacity_limitation": "near-unit isotropic Gaussians do not reproduce physical glass transmission or view-dependent highlights",
+  "mesh_cloud_sha256": "f7f822cc86ca6af3e376f9cbc902aeff6ae3537724d2c5b7ed8bc5a5da63a8eb",
+  "notebook_sha256": "420fd6942bb3d6a14d1cedaa05cc14380bcd0066ba17c91956bcc06bc072acb3"
+}

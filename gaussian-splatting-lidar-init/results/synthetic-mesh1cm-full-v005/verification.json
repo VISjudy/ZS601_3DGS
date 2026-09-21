@@ -1,0 +1,47 @@
+{
+  "status": "VERIFIED_COMPLETE_INITIALIZATION_NOT_TRAINED",
+  "views": 200,
+  "points": 7180820,
+  "png_count": 2000,
+  "init_scale_factor": 0.5,
+  "k": 3,
+  "sigma_median_mm": 4.3976609915677045,
+  "opacity_target": 0.999999,
+  "optimization_steps": 0,
+  "exact_gaussian_fields_vs_smoke": true,
+  "smoke_rerender_exact": true,
+  "smoke_rerender_channels_checked": 28,
+  "cameras_exact": true,
+  "training_3cm_cloud_unchanged": true,
+  "input_cloud_sha256": "f7f822cc86ca6af3e376f9cbc902aeff6ae3537724d2c5b7ed8bc5a5da63a8eb",
+  "training_cloud_sha256": "21c10822a04adf116f05efcb27351d0b210b69bf9dcf1cc5c4d5c5dff1ae6f88",
+  "formal_200_authorized": true,
+  "formal_200_rendered": true,
+  "means": {
+    "native_psnr_gt_valid_db": 19.402595903080233,
+    "native_ssim_gt_valid": 0.7563437359035015,
+    "native_psnr_masked_db": 19.44785013008756,
+    "native_ssim_masked": 0.7575619094073772,
+    "gap_pixels": 1661.435,
+    "gap_pct": 0.23429532378158846,
+    "strict_alpha_zero_pixels": 0.0,
+    "strict_alpha_zero_pct": 0.0,
+    "depth_mae_mm": 16.298701579866965,
+    "depth_rmse_mm": 69.21334144102848,
+    "depth_eval_coverage_pct": 93.74714646322201,
+    "gt_valid_pct": 99.9993597698556
+  },
+  "max_gap": {
+    "name": "003517.png",
+    "gap_pct": 2.83887071299639
+  },
+  "total_strict_alpha_zero_pixels": 0,
+  "executed_notebook_cells": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "remote_archive_sha256": "84dc5e9b3a556e1da7620aab23343e170d337d933fe3df713a6aed8fec25b864"
+}

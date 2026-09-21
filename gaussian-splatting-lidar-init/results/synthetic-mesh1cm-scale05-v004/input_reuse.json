@@ -1,0 +1,7 @@
+{
+  "source_experiment": "D:\\codex\\blenderProject\\experiments\\2026-09-21\\synthetic-mesh1cm-init-v003",
+  "input_bundle_sha256": "0fa5438292b7296d0e096943c80b228f8ec82fc6297f9366a5fa5c1cfeae4aa9",
+  "point_cloud_sha256": "f7f822cc86ca6af3e376f9cbc902aeff6ae3537724d2c5b7ed8bc5a5da63a8eb",
+  "all_source_inputs_unchanged": true,
+  "only_gaussian_scale_factor_changed": true
+}

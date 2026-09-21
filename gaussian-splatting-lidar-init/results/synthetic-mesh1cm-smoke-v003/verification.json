@@ -1,0 +1,41 @@
+{
+  "status": "MESH1CM_SMOKE_VERIFIED_AWAITING_USER_REVIEW",
+  "views": 4,
+  "points": 7180820,
+  "png_count": 28,
+  "k": 3,
+  "init_scale_factor": 1.0,
+  "sigma_median_mm": 8.795321999887456,
+  "optimization_steps": 0,
+  "formal_200_rendered": false,
+  "formal_200_authorized": false,
+  "training_3cm_cloud_unchanged": true,
+  "train_cloud_sha256": "21c10822a04adf116f05efcb27351d0b210b69bf9dcf1cc5c4d5c5dff1ae6f88",
+  "mesh_1cm_cloud_sha256": "f7f822cc86ca6af3e376f9cbc902aeff6ae3537724d2c5b7ed8bc5a5da63a8eb",
+  "camera_matrices_exact": true,
+  "point_xyz_and_sh0_color_exact": true,
+  "knn_sample_count": 20000,
+  "knn_max_absolute_sigma_error_m": 3.454764058163917e-09,
+  "means_on_same_four_views": {
+    "native_psnr_gt_valid_db": {
+      "cloud3cm": 21.870777784036733,
+      "mesh1cm": 24.03720293952644
+    },
+    "native_ssim_gt_valid": {
+      "cloud3cm": 0.846062421798706,
+      "mesh1cm": 0.8520897328853607
+    },
+    "straight_psnr_gt_valid_db": {
+      "cloud3cm": 21.855247605253023,
+      "mesh1cm": 24.03013155137438
+    },
+    "alpha95_coverage": {
+      "cloud3cm": 0.9998476985559567,
+      "mesh1cm": 1.0
+    },
+    "depth_mae_mm": {
+      "cloud3cm": 97.71603807239043,
+      "mesh1cm": 36.878668878118305
+    }
+  }
+}

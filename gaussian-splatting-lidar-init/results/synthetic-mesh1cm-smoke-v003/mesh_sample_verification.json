@@ -1,0 +1,23 @@
+{
+  "status": "PASS",
+  "points": 7180820,
+  "components": 2088,
+  "all_points_checked": true,
+  "max_point_to_source_triangle_distance_m": 3.3173273355863663e-07,
+  "max_normal_component_error": 2.9802294077008185e-08,
+  "unique_one_cm_voxels_per_component": true,
+  "minimum_pairwise_spacing_guaranteed": false,
+  "sampled_points_for_knn": 20000,
+  "knn_k": 3,
+  "nearest_neighbor_m": {
+    "min": 0.00012089398676745338,
+    "median": 0.0068948758614789845,
+    "p95": 0.00965427964416
+  },
+  "knn_rms_sigma_scale1_m": {
+    "min": 0.00275668625881245,
+    "median": 0.008788540263165234,
+    "p95": 0.010766798703383547,
+    "max": 0.015392775485510053
+  }
+}
