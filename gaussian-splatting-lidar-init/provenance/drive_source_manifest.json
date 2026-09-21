@@ -1,0 +1,135 @@
+[
+  {
+    "path": "scene/__init__.py",
+    "drive_id": "1AfZ7_E7FDFtRa_ygQiMk_bc8v3ebMGvQ",
+    "bytes": 4050,
+    "sha256": "65352a8e54e271a88f6f063268d58aef7c9dff2bd78ed57bf8023dce0d5996a8",
+    "modified_time": "2026-05-28T13:50:50.489Z"
+  },
+  {
+    "path": "scene/colmap_loader.py",
+    "drive_id": "1f1lBjbMIJabLtlD7Hl2di6eo7W4UMIJ0",
+    "bytes": 13274,
+    "sha256": "e76f2dc30d6e461418a1e3c05715e5b94c5517291af3366bac4686251e75ce28",
+    "modified_time": "2026-04-10T07:30:24Z"
+  },
+  {
+    "path": "scene/dataset_readers.py",
+    "drive_id": "1V3wLIf4hDzU3nvEe4jZ7FX7IFTKGMfS3",
+    "bytes": 22977,
+    "sha256": "1bc5c1e67eb398edd4199becabfa7f6e529d82dc38152d70b92a968dced85386",
+    "modified_time": "2026-05-28T13:51:07.404Z"
+  },
+  {
+    "path": "scene/gaussian_model.py",
+    "drive_id": "1EvNLB6IfJMT-8CLvt7SPyHv37oseqcKm",
+    "bytes": 19617,
+    "sha256": "fb31f5a087733194985a82192746c36dc627596fd084600b29cfefb5c92fdeb5",
+    "modified_time": "2026-04-10T07:01:59Z"
+  },
+  {
+    "path": "scene/cameras.py",
+    "drive_id": "11xtQI9KkFYPrbEeiRmsjxDnAjsQXvGMw",
+    "bytes": 2639,
+    "sha256": "f5ff25ba0f3a56485cf77c3d396cd2ff66daf18be981b16ba3bbfb887e9f12c0",
+    "modified_time": "2026-04-10T06:06:56Z"
+  },
+  {
+    "path": "gaussian_renderer/network_gui.py",
+    "drive_id": "1BZCs6u7QdHF0Lc5s-_Lz7HFPBqMWbvHO",
+    "bytes": 2716,
+    "sha256": "7e392b8122a8e1359b4550769eac06190806a8c2eeb7f5aa7cbd025738dedf89",
+    "modified_time": "2026-04-10T06:06:56Z"
+  },
+  {
+    "path": "gaussian_renderer/__init__.py",
+    "drive_id": "1PYG7fqWFEx_-CBfwIkHzOeqWz1ztSY7u",
+    "bytes": 3718,
+    "sha256": "75fcc86a57d27d9ea55b2904a4faaf075e7f73dba8c54bcb6cbd4c02c4884084",
+    "modified_time": "2026-04-10T06:06:56Z"
+  },
+  {
+    "path": "environment.yml",
+    "drive_id": "1zkzC110WosEzfIaNXf4RrnbP94PNuGvh",
+    "bytes": 316,
+    "sha256": "9a1b990ebd13175ee30108191e041964a812d41acfb1ef8c8c45659a0e536d8e",
+    "modified_time": "2026-04-10T06:06:56Z"
+  },
+  {
+    "path": ".gitmodules",
+    "drive_id": "1uP99-1j2tN3yP3APaEOwjQrcAtXm-c7G",
+    "bytes": 383,
+    "sha256": "ec832b081184e9bb3fe2145f6cf83d812172e81b5247cceba588f0a10388ff15",
+    "modified_time": "2026-04-10T06:06:56Z"
+  },
+  {
+    "path": "LICENSE.md",
+    "drive_id": "1cNk7xJN4-rj9FfhiWKQIf4XgpsCN9_D_",
+    "bytes": 4275,
+    "sha256": "cd5c95b3cfff3acc1bd412420c770f88809331c3db6872df11a970147aa8e81f",
+    "modified_time": "2026-04-10T06:06:56Z"
+  },
+  {
+    "path": "utils/camera_utils.py",
+    "drive_id": "14PyF7veVYIKade2A18O-GdbKLAT6Z71W",
+    "bytes": 2767,
+    "sha256": "a450a6bcd3630a183f0a6be1b75a89e91444471b12f460613b8beb23a9c3bcef",
+    "modified_time": "2026-04-10T06:06:56Z"
+  },
+  {
+    "path": "utils/general_utils.py",
+    "drive_id": "1oxM-EKXGhomruQItsc2xy61cidU9Q2qZ",
+    "bytes": 3971,
+    "sha256": "97553507caa4f3e6849919d9658b0b0da064e6c8f19142045da79072171ffa51",
+    "modified_time": "2026-04-10T06:06:56Z"
+  },
+  {
+    "path": "utils/image_utils.py",
+    "drive_id": "1WaFoFMVJGLSctpbIwN0hDlItrEnuBWPh",
+    "bytes": 554,
+    "sha256": "872a4507773b9378db9e0fefc90104dc474b27551af18ada73f000a7a00a4ba0",
+    "modified_time": "2026-04-10T06:06:56Z"
+  },
+  {
+    "path": "utils/graphics_utils.py",
+    "drive_id": "1aAuzDdBbfMDJB54Q3ntWkCVdcpx9buF-",
+    "bytes": 2052,
+    "sha256": "d6e75de8161e98b72c2691e8a944a842e1b6625d2306035d079c868ac632edfc",
+    "modified_time": "2026-04-10T06:06:56Z"
+  },
+  {
+    "path": "utils/loss_utils.py",
+    "drive_id": "1Wp8TvpTxQ0LDKihOKwnQwCUaXtVDS17L",
+    "bytes": 2191,
+    "sha256": "53e4824dd41f847bd9c1ce146162886d1d63460acafbfed9db1f3d84dfe63f5f",
+    "modified_time": "2026-04-10T06:06:56Z"
+  },
+  {
+    "path": "utils/sh_utils.py",
+    "drive_id": "1iMAERO2o5ivdQt8uF7PpYfBT3RlaoILs",
+    "bytes": 4371,
+    "sha256": "7d1ff267546390635e6d1f68c4f88c4a8b052482d5c9be1d32f06bc69e9a96e7",
+    "modified_time": "2026-04-10T06:06:56Z"
+  },
+  {
+    "path": "utils/system_utils.py",
+    "drive_id": "1pUsfy5suSm7LCSRamgjOQzJ_WlyKDqPs",
+    "bytes": 785,
+    "sha256": "be01c02d3118c5d53808bc04efccd00c35a705a43a87c3583ea2f4752bc48553",
+    "modified_time": "2026-04-10T06:06:56Z"
+  },
+  {
+    "path": "arguments/__init__.py",
+    "drive_id": "1-aN9WgBVs93I5Fki0L1xw0-yzTqzhRGs",
+    "bytes": 3782,
+    "sha256": "5448f65111453ab465e0667004a70c57a8bbd969e06396ae88298bf461291dcf",
+    "modified_time": "2026-04-10T06:06:56Z"
+  },
+  {
+    "path": "render_from_sparse_v4.py",
+    "drive_id": "1F5u8b9kXSjYYJf8J0OcGpPiy9VzY08V1",
+    "bytes": 22294,
+    "sha256": "8a74e8b175cf3173d6572c6959e192ef1f766f7ab48d706d528f0a2e96ade490",
+    "modified_time": "2026-05-28T13:43:45.176Z"
+  }
+]
