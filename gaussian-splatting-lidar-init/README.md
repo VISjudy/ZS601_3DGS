@@ -16,9 +16,11 @@ PLY and COLMAP TXT; held-out RGB/depth are opened only by the evaluation script.
 - Exact original: `provenance/render_from_sparse_v4.original.py`; dependency hashes:
   `provenance/drive_source_manifest.json`.
 - `scene/`, `utils/`, `arguments/`, `gaussian_renderer/` retain the downloaded code.
-- CUDA extensions use the unchanged vendored sources at
+- CUDA extensions use the vendored sources at
   `../gaussian-splattingWithMask/submodules/{diff-gaussian-rasterization,simple-knn}`
-  from base commit `c28d66eaee6b988c09a6ac6e6f34b2d48fd91f8f`.
+  from base commit `c28d66eaee6b988c09a6ac6e6f34b2d48fd91f8f`, with one compile-only
+  addition: `#include <cstdint>` in `rasterizer_impl.h`. CUDA 12.8 reported undefined
+  `std::uintptr_t`, `uint32_t` and `uint64_t`; no rendering math or alpha cap changed.
 - Keep the included upstream research license; this adaptation grants no new rights.
 
 ## Initialization
