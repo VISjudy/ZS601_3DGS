@@ -1,0 +1,26 @@
+{
+  "point_count": 309240,
+  "optimization_steps": 0,
+  "sh_degree": 0,
+  "requested_opacity": 0.999999,
+  "actual_opacity": {
+    "min": 0.999998927116394,
+    "median": 0.999998927116394,
+    "max": 0.999998927116394
+  },
+  "opacity_logits": {
+    "min": 13.80231761932373,
+    "median": 13.80231761932373,
+    "max": 13.80231761932373
+  },
+  "scales_metres": {
+    "min": 0.0012784363934770226,
+    "median": 0.012924524024128914,
+    "max": 0.08735263347625732
+  },
+  "gaussian_ply_sha256": "8d790401bbe9be4b3935076c7a88a6decb07f440af1bc7bd217d8c55b05fad3a",
+  "ply_reload_exact": true,
+  "xyz_equal_input": true,
+  "kernel_per_fragment_alpha_cap": 0.99,
+  "kernel_near_cutoff_m": 0.2
+}

@@ -1,0 +1,28 @@
+{
+  "status": "VERIFIED_INITIALIZATION_NOT_TRAINED",
+  "views": 200,
+  "points": 309240,
+  "optimization_steps": 0,
+  "exact_xyz": true,
+  "max_sh0_rgb_error": 7.807039748009004e-08,
+  "opacity_decoded_min": 0.9999989867206773,
+  "opacity_decoded_max": 0.9999989867206773,
+  "png_count": 1400,
+  "camera_pose_and_intrinsics_exact": true,
+  "means_over_views": {
+    "alpha95_coverage": 0.6966529853903429,
+    "depth_coverage": 0.9926297735221119,
+    "native_psnr_gt_valid_db": 21.005499196135425,
+    "straight_psnr_gt_valid_db": 23.290285885084234,
+    "straight_psnr_covered_db": 22.58943694006038,
+    "native_ssim_gt_valid": 0.7454252585768699,
+    "straight_ssim_covered": 0.7983650952577591,
+    "ssim_covered_window_fraction": 0.4003830451827617,
+    "depth_mae_mm": 34.174325324089175,
+    "depth_rmse_mm": 95.07913194531957,
+    "depth_absrel": 0.01758937660636064,
+    "depth_eval_coverage": 0.9335087150270758
+  },
+  "evaluation": "Blender synthetic GT, fixed near views; no real-image reconstruction or optimized 3DGS claims",
+  "ssim": "RGB [0,1], Gaussian 11x11 sigma1.5, C1=0.01^2 C2=0.03^2, fully valid windows"
+}

@@ -1,0 +1,23 @@
+{
+  "status": "LOCAL_HASH_PNG_PLY_NOTEBOOK_VERIFIED",
+  "manifest_files": 1415,
+  "png_count": 1400,
+  "camera_views": 200,
+  "gaussians": 309240,
+  "point_xyz_exact": true,
+  "finite_gaussian_parameters": true,
+  "opacity_min": 0.9999989867206773,
+  "opacity_max": 0.9999989867206773,
+  "optimization_steps": 0,
+  "independent_cpu_3nn_samples": 1024,
+  "max_scale_error_m": 7.879975491564828e-09,
+  "executed_code_cells": 5,
+  "executed_cell_counts": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "source_commit": "4c7186e363f14050c4977bb192f12ed237112764"
+}

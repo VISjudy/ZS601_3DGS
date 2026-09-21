@@ -93,6 +93,26 @@ contain `points_3cm.ply`, `sparse/0/{cameras,images}.txt`, and optional `gt/` fo
 for post-render comparison. Use the official Colab CLI upload and run the notebook
 via `nbclient`; interactive Drive mount is unnecessary.
 
+For the delivered run, reuse `reproducibility/source_bundle.tar.gz` and
+`reproducibility/source_manifest.json`, plus the experiment's
+`inputs/input_bundle.zip`. Upload these three files into a **new** remote directory.
+The reusable `cli/deploy_and_run.py` assembles that immutable source/input pair and
+starts one notebook worker. Its paths are controlled by `ZS601_RUN_ROOT`:
+
+```bash
+colab --auth=oauth2 exec -s YOUR_SESSION -f /local/path/cli/deploy_and_run.py \
+  --env ZS601_RUN_ROOT=/content/zs601-lidar-reproduce --timeout 60
+```
+
+On Windows, run this CLI in WSL2 and use `/mnt/d/...` local paths. Allocate one GPU
+session first and use CLI upload/download for transfers. Inspect `launch.json`,
+`notebook_status.json` and `artifacts_ready.json`; download and hash-check the
+artifact archive before stopping the session. The delivered executed notebook is
+the primary evidence of the successful run; the launcher is a packaging helper.
+
+Source download hashes refer to original CRLF files; see
+`provenance/LINE_ENDINGS.md` for Git byte-normalization details.
+
 Direct entrypoints after CUDA extension installation:
 
 ```bash

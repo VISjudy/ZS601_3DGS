@@ -1,0 +1,8 @@
+{
+  "status": "VERIFIED_INITIALIZATION_NOT_TRAINED",
+  "source_commit": "4c7186e363f14050c4977bb192f12ed237112764",
+  "optimization_steps": 0,
+  "views": 200,
+  "points": 309240,
+  "smoke_and_formal_same_ply": true
+}
