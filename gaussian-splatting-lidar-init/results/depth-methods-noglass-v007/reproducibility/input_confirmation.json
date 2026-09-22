@@ -1,0 +1,7 @@
+{
+  "user_confirmed": true,
+  "answer": "使用同一份仿真 noglass 1 cm 点云（推荐）",
+  "exact_input_sha256": "68f26fca61b4c1424c1f45f2f4983c4c42cf389abc23d6e0afadd9d48819de5b",
+  "actual_input_matches_confirmation": true,
+  "real_LAS_used": false
+}

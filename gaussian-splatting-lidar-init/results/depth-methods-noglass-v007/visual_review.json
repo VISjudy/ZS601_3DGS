@@ -1,0 +1,18 @@
+{
+  "inspected_views": [
+    3202,
+    3481
+  ],
+  "final_figures_folder": "comparison_figures",
+  "summary_plot_inspected": true,
+  "layout_pass": true,
+  "common_color_scales": true,
+  "raw_depth_PNG_unchanged": true,
+  "observations": [
+    "A depth is dense but expands near-surface edges around tables, plants, furniture and ceiling details.",
+    "B preserves sparse dots and large empty regions; red behind-surface errors are widespread.",
+    "RGB is a context image of the same untrained Gaussian initialization, not appearance acceptance."
+  ],
+  "preserved_initial_layout": "comparisons: preliminary plot layout has clipped titles; use comparison_figures for final plots",
+  "depth_quality_accepted_as_exact_GT": false
+}

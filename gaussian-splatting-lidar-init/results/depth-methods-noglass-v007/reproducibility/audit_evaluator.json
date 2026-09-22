@@ -1,0 +1,1799 @@
+{
+  "status": "PASS_LIMITED_REVIEW_AFTER_GLASS_MASK_FIX",
+  "reviewed_script": "D:\\codex\\blenderProject\\experiments\\2026-09-22\\depth-methods-noglass-v007\\evaluate_depth.py",
+  "reviewed_script_sha256": "4fe3eeaa86195c060daabc0acabd8291cf967443504674aac6a83326b4813440",
+  "initial_script_sha256": "18d5b9fa5074e16ac6af1f59887be829c8d60861f48fc6a1a214fc41b08b982e",
+  "resolved_findings": [
+    {
+      "severity": "blocking",
+      "initial_lines": [
+        155,
+        157,
+        275
+      ],
+      "issue": "excluded_clear_glass_faces.npy is a 753296-element bool mask, not a 3468-element index vector; len(excluded)==3468 fails and len(excluded) misreports excluded triangle count.",
+      "resolution": "Parent changed to dtype/shape assertion, keep=~excluded, excluded_count=int(excluded.sum()) and uses that count in metadata.",
+      "verified_excluded_faces": 3468,
+      "verified_kept_faces": 749828
+    }
+  ],
+  "remaining_blocking_findings": [],
+  "coordinate_and_format_review": {
+    "COLMAP_world_to_camera_and_inverse": "PASS: pc=world@R.T+t and world=(pc-t)@R, wxyz quaternion",
+    "pixel_centres": "PASS: (x+0.5,y+0.5), consistent with floor(u),floor(v) assignment",
+    "PNG_backprojection_export_chain": "PASS: delivered uint16 PNG is read, divided by1000, backprojected, cast float32, exported and exactly reread; RGB is taken from the matching saved RGB PNG",
+    "all_B_valid_pixels_checked_before_probe": 2781236,
+    "max_B_roundtrip_pixel_error": 2.9558577807620168e-12,
+    "max_B_roundtrip_camera_Z_error_m": 3.552713678800501e-15,
+    "analytic_Embree_checks_performed_before_probe": {
+      "oblique_unnormalized_ray_plane_Z2_max_error_m": 0.0,
+      "Z0_1_plane_skipped_by_near0_2": true,
+      "Z70_plane_rejected_by_far65_535": true
+    },
+    "near_offset_and_tfar": "PASS: camera-Z-unit directions are not normalized; origin=center+0.2*direction and first camera Z=tfar+0.2",
+    "glass_exclusion": "PASS: bool mask exactly matches material semantic_class clear_glass; same mask used by independent probe",
+    "common_mask": "PASS: A depth valid AND B depth valid AND mesh reference valid, so common-valid depth compares identical pixel support"
+  },
+  "metric_interpretation_limits": [
+    "One-sided NN to the original full cloud measures proximity to any source surface and cannot establish visibility or completeness. B retains original points and is structurally favored by this metric.",
+    "Own-valid, interior and boundary summaries use method-specific masks. Only common-valid summaries have matched support across A/B; coverage must be shown alongside errors.",
+    "The common-valid mask is concentrated on B-occupied pixels, so it is not a whole-image comparison of completeness.",
+    "Behind/in-front of mesh first hit is a synthetic visibility proxy after the0.2m near clip. It is not real-world ground truth or a physical transmission model.",
+    "Merged ten-view clouds retain duplicated surfaces, and aggregate errors pool eligible pixels rather than equally weighting cameras."
+  ],
+  "exact_winner_ray_probe": {
+    "status": "PASS_PROBE_CONFIRMS_BACKGROUND_LEAKAGE_WITHOUT_PIXEL_CENTER_SNAPPING",
+    "method": "At most10000 uniformly sampled valid pixels per camera; ray from true camera centre through original PLY winner, scaled to camera-Z component1; no pixel-centre substitution and no PNG quantization in winner Z.",
+    "independent_rotation": "scipy Rotation.from_quat after wxyz-to-xyzw reorder, independent of evaluator colmap_io.rotation",
+    "seed_formula": "20260922 + image_id; numpy default_rng; choice without replacement; sort sampled flat pixel IDs",
+    "sampled_points": 100000,
+    "exact_ray_reference_valid": 100000,
+    "exact_ray_behind_gt30mm_count": 46375,
+    "exact_ray_behind_gt30mm_percent_equal_sample_per_camera": 46.375,
+    "estimated_pixel_population_weighted_behind_gt30mm_percent": 43.098872666684876,
+    "exact_ray_MAE_mm_equal_sample_per_camera": 84.75499920763703,
+    "exact_ray_p95_abs_error_mm_equal_sample_per_camera": 360.91474416105063,
+    "same_sample_pixel_center_behind_gt30mm_count": 46316,
+    "all_sample_winners_reproject_to_saved_pixel": true,
+    "independent_float64_triangle_checks": 30,
+    "max_independent_triangle_Z_difference_m": 8.57938769804889e-07,
+    "interpretation": "The large behind-first-surface rate remains when the ray passes through each original winning 3D sample. Thus the effect cannot be attributed to pixel-centre snapping, camera-coordinate inversion, or saved-PNG quantization. Sparse foreground samples leave image cells in which a geometrically occluded background sample becomes the closest projected point.",
+    "per_view": [
+      {
+        "image_id": 3202,
+        "seed": 20264124,
+        "sampled_valid_pixels": 10000,
+        "exact_winner_ray_reference_valid": 10000,
+        "exact_winner_ray_reference_misses": 0,
+        "exact_winner_ray_behind_gt30mm_count": 3128,
+        "exact_winner_ray_behind_gt30mm_percent": 31.28,
+        "exact_winner_ray_in_front_gt30mm_count": 0,
+        "exact_winner_ray_in_front_gt30mm_percent": 0.0,
+        "exact_winner_ray_MAE_mm": 131.05696418768738,
+        "same_sample_pixel_center_reference_valid": 10000,
+        "same_sample_pixel_center_behind_gt30mm_count": 3102,
+        "same_sample_pixel_center_behind_gt30mm_percent": 31.02,
+        "center_behind_also_exact_ray_behind_count": 3093,
+        "sample_pixel_index_sha256": "a2badebfa000ede4b40756a18f7adec8f03a4a230b4659fc47894bde1a0b3346",
+        "sample_winner_index_sha256": "f22d5b51fed4c7f7d058c989702e79709d20af1057d80768a70e394d7244cae2",
+        "top_occluder_winner_pairs": [
+          {
+            "first_hit_object_id": 416,
+            "first_hit_object": "ZS601_ConferenceTable_ClosedRing",
+            "winner_object_id": 676,
+            "winner_object": "ZS601_Floor",
+            "sampled_behind_count": 670
+          },
+          {
+            "first_hit_object_id": 347,
+            "first_hit_object": "ZS601_Ceiling",
+            "winner_object_id": 347,
+            "winner_object": "ZS601_Ceiling",
+            "sampled_behind_count": 456
+          },
+          {
+            "first_hit_object_id": 676,
+            "first_hit_object": "ZS601_Floor",
+            "winner_object_id": 676,
+            "winner_object": "ZS601_Floor",
+            "sampled_behind_count": 339
+          },
+          {
+            "first_hit_object_id": 416,
+            "first_hit_object": "ZS601_ConferenceTable_ClosedRing",
+            "winner_object_id": 416,
+            "winner_object": "ZS601_ConferenceTable_ClosedRing",
+            "sampled_behind_count": 294
+          },
+          {
+            "first_hit_object_id": 416,
+            "first_hit_object": "ZS601_ConferenceTable_ClosedRing",
+            "winner_object_id": 1421,
+            "winner_object": "ZS601_TableApron_-1.14",
+            "sampled_behind_count": 120
+          }
+        ]
+      },
+      {
+        "image_id": 3340,
+        "seed": 20264262,
+        "sampled_valid_pixels": 10000,
+        "exact_winner_ray_reference_valid": 10000,
+        "exact_winner_ray_reference_misses": 0,
+        "exact_winner_ray_behind_gt30mm_count": 5325,
+        "exact_winner_ray_behind_gt30mm_percent": 53.25,
+        "exact_winner_ray_in_front_gt30mm_count": 0,
+        "exact_winner_ray_in_front_gt30mm_percent": 0.0,
+        "exact_winner_ray_MAE_mm": 116.24757812591895,
+        "same_sample_pixel_center_reference_valid": 9998,
+        "same_sample_pixel_center_behind_gt30mm_count": 5326,
+        "same_sample_pixel_center_behind_gt30mm_percent": 53.270654130826166,
+        "center_behind_also_exact_ray_behind_count": 5307,
+        "sample_pixel_index_sha256": "a8694687287e87384d5dd7d6d6db72e57eeb18b65e0a4354bef16406b008d6a3",
+        "sample_winner_index_sha256": "581edcc534e52345aac4dda225d94f30c79a0feb0518f424ba99b0ec71c95de9",
+        "top_occluder_winner_pairs": [
+          {
+            "first_hit_object_id": 661,
+            "first_hit_object": "ZS601_EastWallPanel",
+            "winner_object_id": 2079,
+            "winner_object": "ZS601_Wall_East",
+            "sampled_behind_count": 586
+          },
+          {
+            "first_hit_object_id": 347,
+            "first_hit_object": "ZS601_Ceiling",
+            "winner_object_id": 347,
+            "winner_object": "ZS601_Ceiling",
+            "sampled_behind_count": 521
+          },
+          {
+            "first_hit_object_id": 661,
+            "first_hit_object": "ZS601_EastWallPanel",
+            "winner_object_id": 661,
+            "winner_object": "ZS601_EastWallPanel",
+            "sampled_behind_count": 450
+          },
+          {
+            "first_hit_object_id": 2081,
+            "first_hit_object": "ZS601_Wall_South",
+            "winner_object_id": 2081,
+            "winner_object": "ZS601_Wall_South",
+            "sampled_behind_count": 390
+          },
+          {
+            "first_hit_object_id": 676,
+            "first_hit_object": "ZS601_Floor",
+            "winner_object_id": 676,
+            "winner_object": "ZS601_Floor",
+            "sampled_behind_count": 271
+          }
+        ]
+      },
+      {
+        "image_id": 3376,
+        "seed": 20264298,
+        "sampled_valid_pixels": 10000,
+        "exact_winner_ray_reference_valid": 10000,
+        "exact_winner_ray_reference_misses": 0,
+        "exact_winner_ray_behind_gt30mm_count": 4824,
+        "exact_winner_ray_behind_gt30mm_percent": 48.24,
+        "exact_winner_ray_in_front_gt30mm_count": 0,
+        "exact_winner_ray_in_front_gt30mm_percent": 0.0,
+        "exact_winner_ray_MAE_mm": 93.67303146310961,
+        "same_sample_pixel_center_reference_valid": 10000,
+        "same_sample_pixel_center_behind_gt30mm_count": 4792,
+        "same_sample_pixel_center_behind_gt30mm_percent": 47.92,
+        "center_behind_also_exact_ray_behind_count": 4781,
+        "sample_pixel_index_sha256": "eb645f815f483c5394af0ad976b9d1bb998107cea4716f3700be750ff4b60600",
+        "sample_winner_index_sha256": "815b0926e69323f05f6cffb85ebbb11a259db9bd6e57e4ca38b316a98ab19fc0",
+        "top_occluder_winner_pairs": [
+          {
+            "first_hit_object_id": 661,
+            "first_hit_object": "ZS601_EastWallPanel",
+            "winner_object_id": 2079,
+            "winner_object": "ZS601_Wall_East",
+            "sampled_behind_count": 781
+          },
+          {
+            "first_hit_object_id": 347,
+            "first_hit_object": "ZS601_Ceiling",
+            "winner_object_id": 347,
+            "winner_object": "ZS601_Ceiling",
+            "sampled_behind_count": 557
+          },
+          {
+            "first_hit_object_id": 661,
+            "first_hit_object": "ZS601_EastWallPanel",
+            "winner_object_id": 661,
+            "winner_object": "ZS601_EastWallPanel",
+            "sampled_behind_count": 535
+          },
+          {
+            "first_hit_object_id": 676,
+            "first_hit_object": "ZS601_Floor",
+            "winner_object_id": 676,
+            "winner_object": "ZS601_Floor",
+            "sampled_behind_count": 367
+          },
+          {
+            "first_hit_object_id": 2081,
+            "first_hit_object": "ZS601_Wall_South",
+            "winner_object_id": 2081,
+            "winner_object": "ZS601_Wall_South",
+            "sampled_behind_count": 241
+          }
+        ]
+      },
+      {
+        "image_id": 3388,
+        "seed": 20264310,
+        "sampled_valid_pixels": 10000,
+        "exact_winner_ray_reference_valid": 10000,
+        "exact_winner_ray_reference_misses": 0,
+        "exact_winner_ray_behind_gt30mm_count": 4980,
+        "exact_winner_ray_behind_gt30mm_percent": 49.8,
+        "exact_winner_ray_in_front_gt30mm_count": 0,
+        "exact_winner_ray_in_front_gt30mm_percent": 0.0,
+        "exact_winner_ray_MAE_mm": 83.9209828976376,
+        "same_sample_pixel_center_reference_valid": 10000,
+        "same_sample_pixel_center_behind_gt30mm_count": 4964,
+        "same_sample_pixel_center_behind_gt30mm_percent": 49.64,
+        "center_behind_also_exact_ray_behind_count": 4944,
+        "sample_pixel_index_sha256": "0a890f1cd0a4c72cd6e8fd09da4d0b21850c3fd0aa6c66bf65c2436c68b35f7a",
+        "sample_winner_index_sha256": "ef541e8483ebf8f49fcc72204020bee24d8c180fa9277a225f43ce312cd0d546",
+        "top_occluder_winner_pairs": [
+          {
+            "first_hit_object_id": 661,
+            "first_hit_object": "ZS601_EastWallPanel",
+            "winner_object_id": 2079,
+            "winner_object": "ZS601_Wall_East",
+            "sampled_behind_count": 939
+          },
+          {
+            "first_hit_object_id": 347,
+            "first_hit_object": "ZS601_Ceiling",
+            "winner_object_id": 347,
+            "winner_object": "ZS601_Ceiling",
+            "sampled_behind_count": 581
+          },
+          {
+            "first_hit_object_id": 661,
+            "first_hit_object": "ZS601_EastWallPanel",
+            "winner_object_id": 661,
+            "winner_object": "ZS601_EastWallPanel",
+            "sampled_behind_count": 457
+          },
+          {
+            "first_hit_object_id": 2080,
+            "first_hit_object": "ZS601_Wall_North",
+            "winner_object_id": 2080,
+            "winner_object": "ZS601_Wall_North",
+            "sampled_behind_count": 389
+          },
+          {
+            "first_hit_object_id": 676,
+            "first_hit_object": "ZS601_Floor",
+            "winner_object_id": 676,
+            "winner_object": "ZS601_Floor",
+            "sampled_behind_count": 239
+          }
+        ]
+      },
+      {
+        "image_id": 3409,
+        "seed": 20264331,
+        "sampled_valid_pixels": 10000,
+        "exact_winner_ray_reference_valid": 10000,
+        "exact_winner_ray_reference_misses": 0,
+        "exact_winner_ray_behind_gt30mm_count": 5607,
+        "exact_winner_ray_behind_gt30mm_percent": 56.07,
+        "exact_winner_ray_in_front_gt30mm_count": 0,
+        "exact_winner_ray_in_front_gt30mm_percent": 0.0,
+        "exact_winner_ray_MAE_mm": 68.27646438324382,
+        "same_sample_pixel_center_reference_valid": 10000,
+        "same_sample_pixel_center_behind_gt30mm_count": 5612,
+        "same_sample_pixel_center_behind_gt30mm_percent": 56.12,
+        "center_behind_also_exact_ray_behind_count": 5602,
+        "sample_pixel_index_sha256": "f571a277b248ee65bfecfc8ce3a3824e00ea4d37e1df57f4d972db93106a640f",
+        "sample_winner_index_sha256": "7698ad01779deb74d4dd82059a5249f32797d50cae70ea5e7110075eb03e5717",
+        "top_occluder_winner_pairs": [
+          {
+            "first_hit_object_id": 661,
+            "first_hit_object": "ZS601_EastWallPanel",
+            "winner_object_id": 2079,
+            "winner_object": "ZS601_Wall_East",
+            "sampled_behind_count": 2202
+          },
+          {
+            "first_hit_object_id": 347,
+            "first_hit_object": "ZS601_Ceiling",
+            "winner_object_id": 347,
+            "winner_object": "ZS601_Ceiling",
+            "sampled_behind_count": 418
+          },
+          {
+            "first_hit_object_id": 2079,
+            "first_hit_object": "ZS601_Wall_East",
+            "winner_object_id": 2079,
+            "winner_object": "ZS601_Wall_East",
+            "sampled_behind_count": 363
+          },
+          {
+            "first_hit_object_id": 2025,
+            "first_hit_object": "ZS601_WallChairEast2_Back",
+            "winner_object_id": 661,
+            "winner_object": "ZS601_EastWallPanel",
+            "sampled_behind_count": 347
+          },
+          {
+            "first_hit_object_id": 2025,
+            "first_hit_object": "ZS601_WallChairEast2_Back",
+            "winner_object_id": 2079,
+            "winner_object": "ZS601_Wall_East",
+            "sampled_behind_count": 308
+          }
+        ]
+      },
+      {
+        "image_id": 3481,
+        "seed": 20264403,
+        "sampled_valid_pixels": 10000,
+        "exact_winner_ray_reference_valid": 10000,
+        "exact_winner_ray_reference_misses": 0,
+        "exact_winner_ray_behind_gt30mm_count": 5198,
+        "exact_winner_ray_behind_gt30mm_percent": 51.98,
+        "exact_winner_ray_in_front_gt30mm_count": 0,
+        "exact_winner_ray_in_front_gt30mm_percent": 0.0,
+        "exact_winner_ray_MAE_mm": 49.53848280160284,
+        "same_sample_pixel_center_reference_valid": 10000,
+        "same_sample_pixel_center_behind_gt30mm_count": 5205,
+        "same_sample_pixel_center_behind_gt30mm_percent": 52.05,
+        "center_behind_also_exact_ray_behind_count": 5195,
+        "sample_pixel_index_sha256": "0e6a4a91e8f72e365f0d7d817415caa9efe1ff001183f9834991f68ddd4a598d",
+        "sample_winner_index_sha256": "daea85841b158d6e7facccd26f7d2277dbefd202776d3cbaae67634764cb58b6",
+        "top_occluder_winner_pairs": [
+          {
+            "first_hit_object_id": 2080,
+            "first_hit_object": "ZS601_Wall_North",
+            "winner_object_id": 2080,
+            "winner_object": "ZS601_Wall_North",
+            "sampled_behind_count": 3376
+          },
+          {
+            "first_hit_object_id": 347,
+            "first_hit_object": "ZS601_Ceiling",
+            "winner_object_id": 347,
+            "winner_object": "ZS601_Ceiling",
+            "sampled_behind_count": 462
+          },
+          {
+            "first_hit_object_id": 763,
+            "first_hit_object": "ZS601_NorthV34_ClockDial",
+            "winner_object_id": 2080,
+            "winner_object": "ZS601_Wall_North",
+            "sampled_behind_count": 163
+          },
+          {
+            "first_hit_object_id": 872,
+            "first_hit_object": "ZS601_NorthV34_SpeakerGrille",
+            "winner_object_id": 2080,
+            "winner_object": "ZS601_Wall_North",
+            "sampled_behind_count": 154
+          },
+          {
+            "first_hit_object_id": 872,
+            "first_hit_object": "ZS601_NorthV34_SpeakerGrille",
+            "winner_object_id": 867,
+            "winner_object": "ZS601_NorthV34_SpeakerBody",
+            "sampled_behind_count": 121
+          }
+        ]
+      },
+      {
+        "image_id": 3505,
+        "seed": 20264427,
+        "sampled_valid_pixels": 10000,
+        "exact_winner_ray_reference_valid": 10000,
+        "exact_winner_ray_reference_misses": 0,
+        "exact_winner_ray_behind_gt30mm_count": 3633,
+        "exact_winner_ray_behind_gt30mm_percent": 36.33,
+        "exact_winner_ray_in_front_gt30mm_count": 0,
+        "exact_winner_ray_in_front_gt30mm_percent": 0.0,
+        "exact_winner_ray_MAE_mm": 80.86861175873314,
+        "same_sample_pixel_center_reference_valid": 10000,
+        "same_sample_pixel_center_behind_gt30mm_count": 3642,
+        "same_sample_pixel_center_behind_gt30mm_percent": 36.42,
+        "center_behind_also_exact_ray_behind_count": 3583,
+        "sample_pixel_index_sha256": "4017448673988b9ecfc1024b10916881e8e12b75a8d1c676b5af314b155a55a9",
+        "sample_winner_index_sha256": "2d3ff0863956538af0344c93690e3223ca97ea06c5192574471fca44bfabd212",
+        "top_occluder_winner_pairs": [
+          {
+            "first_hit_object_id": 676,
+            "first_hit_object": "ZS601_Floor",
+            "winner_object_id": 676,
+            "winner_object": "ZS601_Floor",
+            "sampled_behind_count": 617
+          },
+          {
+            "first_hit_object_id": 347,
+            "first_hit_object": "ZS601_Ceiling",
+            "winner_object_id": 347,
+            "winner_object": "ZS601_Ceiling",
+            "sampled_behind_count": 539
+          },
+          {
+            "first_hit_object_id": 661,
+            "first_hit_object": "ZS601_EastWallPanel",
+            "winner_object_id": 2079,
+            "winner_object": "ZS601_Wall_East",
+            "sampled_behind_count": 452
+          },
+          {
+            "first_hit_object_id": 661,
+            "first_hit_object": "ZS601_EastWallPanel",
+            "winner_object_id": 661,
+            "winner_object": "ZS601_EastWallPanel",
+            "sampled_behind_count": 241
+          },
+          {
+            "first_hit_object_id": 2079,
+            "first_hit_object": "ZS601_Wall_East",
+            "winner_object_id": 2079,
+            "winner_object": "ZS601_Wall_East",
+            "sampled_behind_count": 233
+          }
+        ]
+      },
+      {
+        "image_id": 3520,
+        "seed": 20264442,
+        "sampled_valid_pixels": 10000,
+        "exact_winner_ray_reference_valid": 10000,
+        "exact_winner_ray_reference_misses": 0,
+        "exact_winner_ray_behind_gt30mm_count": 3951,
+        "exact_winner_ray_behind_gt30mm_percent": 39.51,
+        "exact_winner_ray_in_front_gt30mm_count": 0,
+        "exact_winner_ray_in_front_gt30mm_percent": 0.0,
+        "exact_winner_ray_MAE_mm": 50.59325097775973,
+        "same_sample_pixel_center_reference_valid": 9991,
+        "same_sample_pixel_center_behind_gt30mm_count": 3956,
+        "same_sample_pixel_center_behind_gt30mm_percent": 39.59563607246522,
+        "center_behind_also_exact_ray_behind_count": 3939,
+        "sample_pixel_index_sha256": "56f695201193c7dfe9c9b38d91128f18907dbd9ff5e7b06678285ba15d625916",
+        "sample_winner_index_sha256": "68db8f234cb81acfbffe6008222f23297bc11a65af006e76f4f7b6d17f4b6eae",
+        "top_occluder_winner_pairs": [
+          {
+            "first_hit_object_id": 2080,
+            "first_hit_object": "ZS601_Wall_North",
+            "winner_object_id": 2080,
+            "winner_object": "ZS601_Wall_North",
+            "sampled_behind_count": 1402
+          },
+          {
+            "first_hit_object_id": 676,
+            "first_hit_object": "ZS601_Floor",
+            "winner_object_id": 676,
+            "winner_object": "ZS601_Floor",
+            "sampled_behind_count": 497
+          },
+          {
+            "first_hit_object_id": 646,
+            "first_hit_object": "ZS601_DoorV50_Leaf",
+            "winner_object_id": 646,
+            "winner_object": "ZS601_DoorV50_Leaf",
+            "sampled_behind_count": 424
+          },
+          {
+            "first_hit_object_id": 347,
+            "first_hit_object": "ZS601_Ceiling",
+            "winner_object_id": 347,
+            "winner_object": "ZS601_Ceiling",
+            "sampled_behind_count": 407
+          },
+          {
+            "first_hit_object_id": 664,
+            "first_hit_object": "ZS601_FixtureDiffuser_2",
+            "winner_object_id": 347,
+            "winner_object": "ZS601_Ceiling",
+            "sampled_behind_count": 187
+          }
+        ]
+      },
+      {
+        "image_id": 3571,
+        "seed": 20264493,
+        "sampled_valid_pixels": 10000,
+        "exact_winner_ray_reference_valid": 10000,
+        "exact_winner_ray_reference_misses": 0,
+        "exact_winner_ray_behind_gt30mm_count": 6031,
+        "exact_winner_ray_behind_gt30mm_percent": 60.31,
+        "exact_winner_ray_in_front_gt30mm_count": 0,
+        "exact_winner_ray_in_front_gt30mm_percent": 0.0,
+        "exact_winner_ray_MAE_mm": 49.99642569782942,
+        "same_sample_pixel_center_reference_valid": 10000,
+        "same_sample_pixel_center_behind_gt30mm_count": 6029,
+        "same_sample_pixel_center_behind_gt30mm_percent": 60.29,
+        "center_behind_also_exact_ray_behind_count": 6026,
+        "sample_pixel_index_sha256": "854bedeec35ed76cfe35c64c5cd05b0a299eb1843e06f33f15b4bd02cec7a7f5",
+        "sample_winner_index_sha256": "11ff2358b5da406944617a9a3bb85d34a8b7986c6f3546878bc33633b1a1c56c",
+        "top_occluder_winner_pairs": [
+          {
+            "first_hit_object_id": 2083,
+            "first_hit_object": "ZS601_Whiteboard",
+            "winner_object_id": 2080,
+            "winner_object": "ZS601_Wall_North",
+            "sampled_behind_count": 2079
+          },
+          {
+            "first_hit_object_id": 2080,
+            "first_hit_object": "ZS601_Wall_North",
+            "winner_object_id": 2080,
+            "winner_object": "ZS601_Wall_North",
+            "sampled_behind_count": 2014
+          },
+          {
+            "first_hit_object_id": 2083,
+            "first_hit_object": "ZS601_Whiteboard",
+            "winner_object_id": 2083,
+            "winner_object": "ZS601_Whiteboard",
+            "sampled_behind_count": 1002
+          },
+          {
+            "first_hit_object_id": 347,
+            "first_hit_object": "ZS601_Ceiling",
+            "winner_object_id": 347,
+            "winner_object": "ZS601_Ceiling",
+            "sampled_behind_count": 300
+          },
+          {
+            "first_hit_object_id": 2,
+            "first_hit_object": "ZS601_BoardTray",
+            "winner_object_id": 2080,
+            "winner_object": "ZS601_Wall_North",
+            "sampled_behind_count": 150
+          }
+        ]
+      },
+      {
+        "image_id": 3583,
+        "seed": 20264505,
+        "sampled_valid_pixels": 10000,
+        "exact_winner_ray_reference_valid": 10000,
+        "exact_winner_ray_reference_misses": 0,
+        "exact_winner_ray_behind_gt30mm_count": 3698,
+        "exact_winner_ray_behind_gt30mm_percent": 36.98,
+        "exact_winner_ray_in_front_gt30mm_count": 0,
+        "exact_winner_ray_in_front_gt30mm_percent": 0.0,
+        "exact_winner_ray_MAE_mm": 123.37819978284779,
+        "same_sample_pixel_center_reference_valid": 10000,
+        "same_sample_pixel_center_behind_gt30mm_count": 3688,
+        "same_sample_pixel_center_behind_gt30mm_percent": 36.88,
+        "center_behind_also_exact_ray_behind_count": 3683,
+        "sample_pixel_index_sha256": "63f9f1ee320e7b36c614514f830506f1f21ce34e0cb1ac271520efc398a57564",
+        "sample_winner_index_sha256": "81ea6afc523c43d40ab74afdd582ae0ad78892650b1e611153411ac3484b5ef2",
+        "top_occluder_winner_pairs": [
+          {
+            "first_hit_object_id": 347,
+            "first_hit_object": "ZS601_Ceiling",
+            "winner_object_id": 347,
+            "winner_object": "ZS601_Ceiling",
+            "sampled_behind_count": 471
+          },
+          {
+            "first_hit_object_id": 676,
+            "first_hit_object": "ZS601_Floor",
+            "winner_object_id": 676,
+            "winner_object": "ZS601_Floor",
+            "sampled_behind_count": 441
+          },
+          {
+            "first_hit_object_id": 2082,
+            "first_hit_object": "ZS601_Wall_West",
+            "winner_object_id": 2082,
+            "winner_object": "ZS601_Wall_West",
+            "sampled_behind_count": 393
+          },
+          {
+            "first_hit_object_id": 416,
+            "first_hit_object": "ZS601_ConferenceTable_ClosedRing",
+            "winner_object_id": 676,
+            "winner_object": "ZS601_Floor",
+            "sampled_behind_count": 271
+          },
+          {
+            "first_hit_object_id": 1396,
+            "first_hit_object": "ZS601_TVScreen",
+            "winner_object_id": 2082,
+            "winner_object": "ZS601_Wall_West",
+            "sampled_behind_count": 152
+          }
+        ]
+      }
+    ],
+    "top_occluder_winner_pairs": [
+      {
+        "first_hit_object_id": 2080,
+        "first_hit_object": "ZS601_Wall_North",
+        "winner_object_id": 2080,
+        "winner_object": "ZS601_Wall_North",
+        "sampled_behind_count": 7231
+      },
+      {
+        "first_hit_object_id": 661,
+        "first_hit_object": "ZS601_EastWallPanel",
+        "winner_object_id": 2079,
+        "winner_object": "ZS601_Wall_East",
+        "sampled_behind_count": 4960
+      },
+      {
+        "first_hit_object_id": 347,
+        "first_hit_object": "ZS601_Ceiling",
+        "winner_object_id": 347,
+        "winner_object": "ZS601_Ceiling",
+        "sampled_behind_count": 4712
+      },
+      {
+        "first_hit_object_id": 676,
+        "first_hit_object": "ZS601_Floor",
+        "winner_object_id": 676,
+        "winner_object": "ZS601_Floor",
+        "sampled_behind_count": 2771
+      },
+      {
+        "first_hit_object_id": 2083,
+        "first_hit_object": "ZS601_Whiteboard",
+        "winner_object_id": 2080,
+        "winner_object": "ZS601_Wall_North",
+        "sampled_behind_count": 2079
+      },
+      {
+        "first_hit_object_id": 661,
+        "first_hit_object": "ZS601_EastWallPanel",
+        "winner_object_id": 661,
+        "winner_object": "ZS601_EastWallPanel",
+        "sampled_behind_count": 1688
+      },
+      {
+        "first_hit_object_id": 2079,
+        "first_hit_object": "ZS601_Wall_East",
+        "winner_object_id": 2079,
+        "winner_object": "ZS601_Wall_East",
+        "sampled_behind_count": 1182
+      },
+      {
+        "first_hit_object_id": 416,
+        "first_hit_object": "ZS601_ConferenceTable_ClosedRing",
+        "winner_object_id": 676,
+        "winner_object": "ZS601_Floor",
+        "sampled_behind_count": 1174
+      },
+      {
+        "first_hit_object_id": 2083,
+        "first_hit_object": "ZS601_Whiteboard",
+        "winner_object_id": 2083,
+        "winner_object": "ZS601_Whiteboard",
+        "sampled_behind_count": 1007
+      },
+      {
+        "first_hit_object_id": 2081,
+        "first_hit_object": "ZS601_Wall_South",
+        "winner_object_id": 2081,
+        "winner_object": "ZS601_Wall_South",
+        "sampled_behind_count": 645
+      },
+      {
+        "first_hit_object_id": 2025,
+        "first_hit_object": "ZS601_WallChairEast2_Back",
+        "winner_object_id": 661,
+        "winner_object": "ZS601_EastWallPanel",
+        "sampled_behind_count": 506
+      },
+      {
+        "first_hit_object_id": 646,
+        "first_hit_object": "ZS601_DoorV50_Leaf",
+        "winner_object_id": 646,
+        "winner_object": "ZS601_DoorV50_Leaf",
+        "sampled_behind_count": 491
+      },
+      {
+        "first_hit_object_id": 416,
+        "first_hit_object": "ZS601_ConferenceTable_ClosedRing",
+        "winner_object_id": 416,
+        "winner_object": "ZS601_ConferenceTable_ClosedRing",
+        "sampled_behind_count": 466
+      },
+      {
+        "first_hit_object_id": 2025,
+        "first_hit_object": "ZS601_WallChairEast2_Back",
+        "winner_object_id": 2079,
+        "winner_object": "ZS601_Wall_East",
+        "sampled_behind_count": 428
+      },
+      {
+        "first_hit_object_id": 2082,
+        "first_hit_object": "ZS601_Wall_West",
+        "winner_object_id": 2082,
+        "winner_object": "ZS601_Wall_West",
+        "sampled_behind_count": 393
+      }
+    ],
+    "examples": [
+      {
+        "image_id": 3202,
+        "pixel_flat": 428703,
+        "pixel_xy": [
+          543,
+          669
+        ],
+        "actual_point_uv": [
+          543.8191735828018,
+          669.1116827280623
+        ],
+        "winner_source_row": 6624967,
+        "original_v003_sample_id": 6801091,
+        "winner_XYZ_m": [
+          3.832838296890259,
+          1.7934879064559937,
+          -0.8830623626708984
+        ],
+        "winner_face_id": 90288,
+        "winner_object_id": 644,
+        "winner_object": "ZS601_DoorV50_Kickplate",
+        "first_hit_face_id": 214978,
+        "first_hit_object_id": 1440,
+        "first_hit_object": "ZS601_TableChair_East1_Back",
+        "winner_camera_Z_m": 7.793439113775932,
+        "first_hit_camera_Z_m": 4.2647521018981935,
+        "behind_first_hit_m": 3.5286870118777385,
+        "float64_triangle_parameter_check": {
+          "t_after_near_m": 4.0647524453358646,
+          "u": 0.15884594126204726,
+          "v": 0.40962890783834716,
+          "inside_with_1e-5_tolerance": true
+        },
+        "float64_triangle_check_Z_error_m": 3.4343767119082713e-07
+      },
+      {
+        "image_id": 3202,
+        "pixel_flat": 456917,
+        "pixel_xy": [
+          597,
+          713
+        ],
+        "actual_point_uv": [
+          597.7900532113905,
+          713.9636238186172
+        ],
+        "winner_source_row": 5648480,
+        "original_v003_sample_id": 5823632,
+        "winner_XYZ_m": [
+          3.306206226348877,
+          -0.10649930685758591,
+          -0.9625343084335327
+        ],
+        "winner_face_id": 92452,
+        "winner_object_id": 676,
+        "winner_object": "ZS601_Floor",
+        "first_hit_face_id": 61492,
+        "first_hit_object_id": 416,
+        "first_hit_object": "ZS601_ConferenceTable_ClosedRing",
+        "winner_camera_Z_m": 5.83396185619625,
+        "first_hit_camera_Z_m": 3.284622859954834,
+        "behind_first_hit_m": 2.549338996241416,
+        "float64_triangle_parameter_check": {
+          "t_after_near_m": 3.0846229936011085,
+          "u": 0.16713150894830425,
+          "v": 0.3068641981790271,
+          "inside_with_1e-5_tolerance": true
+        },
+        "float64_triangle_check_Z_error_m": 1.336462744916389e-07
+      },
+      {
+        "image_id": 3202,
+        "pixel_flat": 319707,
+        "pixel_xy": [
+          347,
+          499
+        ],
+        "actual_point_uv": [
+          347.3398751461089,
+          499.0265385031203
+        ],
+        "winner_source_row": 3739322,
+        "original_v003_sample_id": 3854466,
+        "winner_XYZ_m": [
+          0.8955529928207397,
+          0.8736166954040527,
+          1.4461060762405396
+        ],
+        "winner_face_id": 51110,
+        "winner_object_id": 347,
+        "winner_object": "ZS601_Ceiling",
+        "first_hit_face_id": 129674,
+        "first_hit_object_id": 1152,
+        "first_hit_object": "ZS601_ProjectorV12_Housing",
+        "winner_camera_Z_m": 6.453649956833686,
+        "first_hit_camera_Z_m": 4.021197986602783,
+        "behind_first_hit_m": 2.432451970230902,
+        "float64_triangle_parameter_check": {
+          "t_after_near_m": 3.821197128664014,
+          "u": 0.2376209902869443,
+          "v": 0.4535894237451004,
+          "inside_with_1e-5_tolerance": true
+        },
+        "float64_triangle_check_Z_error_m": 8.57938769804889e-07
+      },
+      {
+        "image_id": 3340,
+        "pixel_flat": 518054,
+        "pixel_xy": [
+          294,
+          809
+        ],
+        "actual_point_uv": [
+          294.07060220819255,
+          809.067293989077
+        ],
+        "winner_source_row": 6717656,
+        "original_v003_sample_id": 6893780,
+        "winner_XYZ_m": [
+          4.106014251708984,
+          -6.223826885223389,
+          -0.8953465819358826
+        ],
+        "winner_face_id": 132793,
+        "winner_object_id": 1322,
+        "winner_object": "ZS601_ServiceV41_High_Right",
+        "first_hit_face_id": 144881,
+        "first_hit_object_id": 1390,
+        "first_hit_object": "ZS601_ServiceV47_WaterOutletCover",
+        "winner_camera_Z_m": 3.2867506535978563,
+        "first_hit_camera_Z_m": 1.9586877346038818,
+        "behind_first_hit_m": 1.3280629189939746,
+        "float64_triangle_parameter_check": {
+          "t_after_near_m": 1.7586878274354074,
+          "u": 0.05146493880251882,
+          "v": 0.29274129350968964,
+          "inside_with_1e-5_tolerance": true
+        },
+        "float64_triangle_check_Z_error_m": 9.283152557770791e-08
+      },
+      {
+        "image_id": 3340,
+        "pixel_flat": 521239,
+        "pixel_xy": [
+          279,
+          814
+        ],
+        "actual_point_uv": [
+          279.12185250719256,
+          814.1310425301491
+        ],
+        "winner_source_row": 6767677,
+        "original_v003_sample_id": 6943801,
+        "winner_XYZ_m": [
+          4.070886611938477,
+          -5.9443440437316895,
+          -0.7878576517105103
+        ],
+        "winner_face_id": 132790,
+        "winner_object_id": 1322,
+        "winner_object": "ZS601_ServiceV41_High_Right",
+        "first_hit_face_id": 144235,
+        "first_hit_object_id": 1387,
+        "first_hit_object": "ZS601_ServiceV47_WaterHead",
+        "winner_camera_Z_m": 3.01050356334539,
+        "first_hit_camera_Z_m": 1.867914867401123,
+        "behind_first_hit_m": 1.1425886959442668,
+        "float64_triangle_parameter_check": {
+          "t_after_near_m": 1.667914660289846,
+          "u": 0.7233771693794295,
+          "v": 0.031247120472919533,
+          "inside_with_1e-5_tolerance": true
+        },
+        "float64_triangle_check_Z_error_m": 2.0711127701744658e-07
+      },
+      {
+        "image_id": 3340,
+        "pixel_flat": 571797,
+        "pixel_xy": [
+          277,
+          893
+        ],
+        "actual_point_uv": [
+          277.2902989493353,
+          893.6123133515798
+        ],
+        "winner_source_row": 5799503,
+        "original_v003_sample_id": 5974655,
+        "winner_XYZ_m": [
+          3.963895082473755,
+          -5.71713924407959,
+          -1.0631014108657837
+        ],
+        "winner_face_id": 92451,
+        "winner_object_id": 676,
+        "winner_object": "ZS601_Floor",
+        "first_hit_face_id": 672158,
+        "first_hit_object_id": 2056,
+        "first_hit_object": "ZS601_WallChairEast8_FrameWeldedV53",
+        "winner_camera_Z_m": 2.7695545938424146,
+        "first_hit_camera_Z_m": 1.6728507995605468,
+        "behind_first_hit_m": 1.0967037942818678,
+        "float64_triangle_parameter_check": {
+          "t_after_near_m": 1.4728507642315487,
+          "u": 0.33923736290280443,
+          "v": 0.6209907944545962,
+          "inside_with_1e-5_tolerance": true
+        },
+        "float64_triangle_check_Z_error_m": 3.532899817138002e-08
+      },
+      {
+        "image_id": 3376,
+        "pixel_flat": 561621,
+        "pixel_xy": [
+          341,
+          877
+        ],
+        "actual_point_uv": [
+          341.81347938361705,
+          877.5680139864571
+        ],
+        "winner_source_row": 6883606,
+        "original_v003_sample_id": 7059730,
+        "winner_XYZ_m": [
+          4.0296783447265625,
+          -4.706506252288818,
+          -1.058351993560791
+        ],
+        "winner_face_id": 92451,
+        "winner_object_id": 676,
+        "winner_object": "ZS601_Floor",
+        "first_hit_face_id": 655699,
+        "first_hit_object_id": 2051,
+        "first_hit_object": "ZS601_WallChairEast7_FrameWeldedV53",
+        "winner_camera_Z_m": 3.008112140953915,
+        "first_hit_camera_Z_m": 1.799843978881836,
+        "behind_first_hit_m": 1.208268162072079,
+        "float64_triangle_parameter_check": {
+          "t_after_near_m": 1.599844030024005,
+          "u": 0.09671962013024461,
+          "v": 0.5024341936584404,
+          "inside_with_1e-5_tolerance": true
+        },
+        "float64_triangle_check_Z_error_m": 5.114216916624059e-08
+      },
+      {
+        "image_id": 3376,
+        "pixel_flat": 521995,
+        "pixel_xy": [
+          395,
+          815
+        ],
+        "actual_point_uv": [
+          395.28969261559035,
+          815.2798623600407
+        ],
+        "winner_source_row": 5872816,
+        "original_v003_sample_id": 6047968,
+        "winner_XYZ_m": [
+          3.946328639984131,
+          -5.246367931365967,
+          -0.9218037128448486
+        ],
+        "winner_face_id": 136850,
+        "winner_object_id": 1344,
+        "winner_object": "ZS601_ServiceV47_CabinetSideNorth",
+        "first_hit_face_id": 653339,
+        "first_hit_object_id": 2051,
+        "first_hit_object": "ZS601_WallChairEast7_FrameWeldedV53",
+        "winner_camera_Z_m": 3.42863393938224,
+        "first_hit_camera_Z_m": 2.261456918716431,
+        "behind_first_hit_m": 1.1671770206658092,
+        "float64_triangle_parameter_check": {
+          "t_after_near_m": 2.0614571067046517,
+          "u": 0.31588935383348776,
+          "v": 0.6731187239106962,
+          "inside_with_1e-5_tolerance": true
+        },
+        "float64_triangle_check_Z_error_m": 1.8798822098986534e-07
+      },
+      {
+        "image_id": 3376,
+        "pixel_flat": 570572,
+        "pixel_xy": [
+          332,
+          891
+        ],
+        "actual_point_uv": [
+          332.3089702611611,
+          891.3006197761016
+        ],
+        "winner_source_row": 6883569,
+        "original_v003_sample_id": 7059693,
+        "winner_XYZ_m": [
+          4.014835834503174,
+          -4.574423313140869,
+          -1.0576350688934326
+        ],
+        "winner_face_id": 92451,
+        "winner_object_id": 676,
+        "winner_object": "ZS601_Floor",
+        "first_hit_face_id": 634461,
+        "first_hit_object_id": 2046,
+        "first_hit_object": "ZS601_WallChairEast6_FrameWeldedV53",
+        "winner_camera_Z_m": 2.8867856830738967,
+        "first_hit_camera_Z_m": 1.7459403991699218,
+        "behind_first_hit_m": 1.1408452839039749,
+        "float64_triangle_parameter_check": {
+          "t_after_near_m": 1.545940359594604,
+          "u": 0.0010783566839535875,
+          "v": 0.3420903101519104,
+          "inside_with_1e-5_tolerance": true
+        },
+        "float64_triangle_check_Z_error_m": 3.957531791165536e-08
+      },
+      {
+        "image_id": 3388,
+        "pixel_flat": 531346,
+        "pixel_xy": [
+          146,
+          830
+        ],
+        "actual_point_uv": [
+          146.51573956868413,
+          830.4663069299745
+        ],
+        "winner_source_row": 6667663,
+        "original_v003_sample_id": 6843787,
+        "winner_XYZ_m": [
+          3.69290828704834,
+          2.1893303394317627,
+          -0.9945672154426575
+        ],
+        "winner_face_id": 90974,
+        "winner_object_id": 655,
+        "winner_object": "ZS601_DoorV50_ThresholdCarpet",
+        "first_hit_face_id": 508587,
+        "first_hit_object_id": 2014,
+        "first_hit_object": "ZS601_WallChairEast0_ArmSleeveV53_1",
+        "winner_camera_Z_m": 3.7820053107237954,
+        "first_hit_camera_Z_m": 2.295120191574097,
+        "behind_first_hit_m": 1.4868851191496986,
+        "float64_triangle_parameter_check": {
+          "t_after_near_m": 2.095120204342326,
+          "u": 0.8161832604589563,
+          "v": 0.16868891747405615,
+          "inside_with_1e-5_tolerance": true
+        },
+        "float64_triangle_check_Z_error_m": 1.2768229140647236e-08
+      },
+      {
+        "image_id": 3388,
+        "pixel_flat": 526888,
+        "pixel_xy": [
+          168,
+          823
+        ],
+        "actual_point_uv": [
+          168.8553917988819,
+          823.4953884033746
+        ],
+        "winner_source_row": 6663482,
+        "original_v003_sample_id": 6839606,
+        "winner_XYZ_m": [
+          3.815007448196411,
+          2.0930705070495605,
+          -0.9359517097473145
+        ],
+        "winner_face_id": 90325,
+        "winner_object_id": 646,
+        "winner_object": "ZS601_DoorV50_Leaf",
+        "first_hit_face_id": 508841,
+        "first_hit_object_id": 2014,
+        "first_hit_object": "ZS601_WallChairEast0_ArmSleeveV53_1",
+        "winner_camera_Z_m": 3.767752050680889,
+        "first_hit_camera_Z_m": 2.3577954292297365,
+        "behind_first_hit_m": 1.4099566214511525,
+        "float64_triangle_parameter_check": {
+          "t_after_near_m": 2.1577954548723435,
+          "u": 0.02253938705578461,
+          "v": 0.09482399102439651,
+          "inside_with_1e-5_tolerance": true
+        },
+        "float64_triangle_check_Z_error_m": 2.5642607148768093e-08
+      },
+      {
+        "image_id": 3388,
+        "pixel_flat": 535827,
+        "pixel_xy": [
+          147,
+          837
+        ],
+        "actual_point_uv": [
+          147.20781426719583,
+          837.8972732879524
+        ],
+        "winner_source_row": 6633052,
+        "original_v003_sample_id": 6809176,
+        "winner_XYZ_m": [
+          3.643611192703247,
+          1.992140769958496,
+          -0.9534966349601746
+        ],
+        "winner_face_id": 92452,
+        "winner_object_id": 676,
+        "winner_object": "ZS601_Floor",
+        "first_hit_face_id": 508603,
+        "first_hit_object_id": 2014,
+        "first_hit_object": "ZS601_WallChairEast0_ArmSleeveV53_1",
+        "winner_camera_Z_m": 3.590647561304704,
+        "first_hit_camera_Z_m": 2.283978891372681,
+        "behind_first_hit_m": 1.3066686699320234,
+        "float64_triangle_parameter_check": {
+          "t_after_near_m": 2.0839788925374405,
+          "u": 0.549627741322277,
+          "v": 0.38676518994749076,
+          "inside_with_1e-5_tolerance": true
+        },
+        "float64_triangle_check_Z_error_m": 1.1647598441300033e-09
+      },
+      {
+        "image_id": 3409,
+        "pixel_flat": 707896,
+        "pixel_xy": [
+          56,
+          1106
+        ],
+        "actual_point_uv": [
+          56.2905496364686,
+          1106.2982198802679
+        ],
+        "winner_source_row": 6404647,
+        "original_v003_sample_id": 6579799,
+        "winner_XYZ_m": [
+          3.8513827323913574,
+          -0.23258431255817413,
+          -0.8746536374092102
+        ],
+        "winner_face_id": 753005,
+        "winner_object_id": 2079,
+        "winner_object": "ZS601_Wall_East",
+        "first_hit_face_id": 526462,
+        "first_hit_object_id": 2018,
+        "first_hit_object": "ZS601_WallChairEast1_ArmSleeveV53_-1",
+        "winner_camera_Z_m": 1.5279662763973834,
+        "first_hit_camera_Z_m": 1.0092835545539856,
+        "behind_first_hit_m": 0.5186827218433978,
+        "float64_triangle_parameter_check": {
+          "t_after_near_m": 0.8092835806622609,
+          "u": 0.20170145720723226,
+          "v": 0.5159729373467892,
+          "inside_with_1e-5_tolerance": true
+        },
+        "float64_triangle_check_Z_error_m": 2.6108275319458585e-08
+      },
+      {
+        "image_id": 3409,
+        "pixel_flat": 708320,
+        "pixel_xy": [
+          480,
+          1106
+        ],
+        "actual_point_uv": [
+          480.40361997610455,
+          1106.220720083958
+        ],
+        "winner_source_row": 6281013,
+        "original_v003_sample_id": 6456165,
+        "winner_XYZ_m": [
+          3.9224135875701904,
+          -1.3939303159713745,
+          -0.8080892562866211
+        ],
+        "winner_face_id": 753005,
+        "winner_object_id": 2079,
+        "winner_object": "ZS601_Wall_East",
+        "first_hit_face_id": 565428,
+        "first_hit_object_id": 2029,
+        "first_hit_object": "ZS601_WallChairEast3_ArmSleeveV53_1",
+        "winner_camera_Z_m": 1.5143838528256999,
+        "first_hit_camera_Z_m": 1.0367430567741394,
+        "behind_first_hit_m": 0.4776407960515605,
+        "float64_triangle_parameter_check": {
+          "t_after_near_m": 0.8367430725889118,
+          "u": 0.05571663976937383,
+          "v": 0.6070231777785676,
+          "inside_with_1e-5_tolerance": true
+        },
+        "float64_triangle_check_Z_error_m": 1.581477238055129e-08
+      },
+      {
+        "image_id": 3409,
+        "pixel_flat": 693239,
+        "pixel_xy": [
+          119,
+          1083
+        ],
+        "actual_point_uv": [
+          119.94866078236524,
+          1083.2566672287708
+        ],
+        "winner_source_row": 6405223,
+        "original_v003_sample_id": 6580375,
+        "winner_XYZ_m": [
+          3.862025737762451,
+          -0.40659934282302856,
+          -0.797448992729187
+        ],
+        "winner_face_id": 753005,
+        "winner_object_id": 2079,
+        "winner_object": "ZS601_Wall_East",
+        "first_hit_face_id": 546553,
+        "first_hit_object_id": 2024,
+        "first_hit_object": "ZS601_WallChairEast2_ArmSleeveV53_1",
+        "winner_camera_Z_m": 1.5221083508232045,
+        "first_hit_camera_Z_m": 1.046434712409973,
+        "behind_first_hit_m": 0.4756736384132314,
+        "float64_triangle_parameter_check": {
+          "t_after_near_m": 0.8464346961750784,
+          "u": 0.058919055157107825,
+          "v": 0.6777610051368668,
+          "inside_with_1e-5_tolerance": true
+        },
+        "float64_triangle_check_Z_error_m": 1.623489476187956e-08
+      },
+      {
+        "image_id": 3481,
+        "pixel_flat": 177792,
+        "pixel_xy": [
+          512,
+          277
+        ],
+        "actual_point_uv": [
+          512.3099482565341,
+          277.06577267968225
+        ],
+        "winner_source_row": 5045996,
+        "original_v003_sample_id": 5206531,
+        "winner_XYZ_m": [
+          2.373231887817383,
+          2.188965320587158,
+          1.3601408004760742
+        ],
+        "winner_face_id": 753033,
+        "winner_object_id": 2080,
+        "winner_object": "ZS601_Wall_North",
+        "first_hit_face_id": 106015,
+        "first_hit_object_id": 872,
+        "first_hit_object": "ZS601_NorthV34_SpeakerGrille",
+        "winner_camera_Z_m": 1.2343290676385672,
+        "first_hit_camera_Z_m": 0.9879337668418884,
+        "behind_first_hit_m": 0.24639530079667882,
+        "float64_triangle_parameter_check": {
+          "t_after_near_m": 0.7879341453918398,
+          "u": 0.07392155205643094,
+          "v": 0.3825586435650437,
+          "inside_with_1e-5_tolerance": true
+        },
+        "float64_triangle_check_Z_error_m": 3.7854995138530967e-07
+      },
+      {
+        "image_id": 3481,
+        "pixel_flat": 148929,
+        "pixel_xy": [
+          449,
+          232
+        ],
+        "actual_point_uv": [
+          449.3248928486822,
+          232.33626386849465
+        ],
+        "winner_source_row": 5044414,
+        "original_v003_sample_id": 5204949,
+        "winner_XYZ_m": [
+          2.2118215560913086,
+          2.1790928840637207,
+          1.4267971515655518
+        ],
+        "winner_face_id": 753033,
+        "winner_object_id": 2080,
+        "winner_object": "ZS601_Wall_North",
+        "first_hit_face_id": 105610,
+        "first_hit_object_id": 866,
+        "first_hit_object": "ZS601_NorthV34_SpeakerBadge",
+        "winner_camera_Z_m": 1.1840365575452856,
+        "first_hit_camera_Z_m": 0.9460867762565612,
+        "behind_first_hit_m": 0.23794978128872435,
+        "float64_triangle_parameter_check": {
+          "t_after_near_m": 0.7460868660575813,
+          "u": 0.6355183054259982,
+          "v": 0.1927400971597506,
+          "inside_with_1e-5_tolerance": true
+        },
+        "float64_triangle_check_Z_error_m": 8.980102017552838e-08
+      },
+      {
+        "image_id": 3481,
+        "pixel_flat": 183536,
+        "pixel_xy": [
+          496,
+          286
+        ],
+        "actual_point_uv": [
+          496.9526742365339,
+          286.026764697421
+        ],
+        "winner_source_row": 5045603,
+        "original_v003_sample_id": 5206138,
+        "winner_XYZ_m": [
+          2.3345088958740234,
+          2.1865968704223633,
+          1.3338279724121094
+        ],
+        "winner_face_id": 753033,
+        "winner_object_id": 2080,
+        "winner_object": "ZS601_Wall_North",
+        "first_hit_face_id": 105726,
+        "first_hit_object_id": 867,
+        "first_hit_object": "ZS601_NorthV34_SpeakerBody",
+        "winner_camera_Z_m": 1.2231114205187146,
+        "first_hit_camera_Z_m": 0.9880479097366333,
+        "behind_first_hit_m": 0.23506351078208132,
+        "float64_triangle_parameter_check": {
+          "t_after_near_m": 0.7880478793678096,
+          "u": 0.24483900013452684,
+          "v": 0.666821471190157,
+          "inside_with_1e-5_tolerance": true
+        },
+        "float64_triangle_check_Z_error_m": 3.036882367801752e-08
+      },
+      {
+        "image_id": 3505,
+        "pixel_flat": 506230,
+        "pixel_xy": [
+          630,
+          790
+        ],
+        "actual_point_uv": [
+          630.3137459451627,
+          790.4637197370312
+        ],
+        "winner_source_row": 5237227,
+        "original_v003_sample_id": 5412379,
+        "winner_XYZ_m": [
+          2.812256097793579,
+          -2.371859312057495,
+          -1.0417572259902954
+        ],
+        "winner_face_id": 92451,
+        "winner_object_id": 676,
+        "winner_object": "ZS601_Floor",
+        "first_hit_face_id": 196315,
+        "first_hit_object_id": 1435,
+        "first_hit_object": "ZS601_TableChair_East0_Back",
+        "winner_camera_Z_m": 3.515676340545276,
+        "first_hit_camera_Z_m": 1.7778180360794067,
+        "behind_first_hit_m": 1.7378583044658693,
+        "float64_triangle_parameter_check": {
+          "t_after_near_m": 1.5778179078909647,
+          "u": 0.09436253816566154,
+          "v": 0.4771075014257998,
+          "inside_with_1e-5_tolerance": true
+        },
+        "float64_triangle_check_Z_error_m": 1.2818844208339897e-07
+      },
+      {
+        "image_id": 3505,
+        "pixel_flat": 519656,
+        "pixel_xy": [
+          616,
+          811
+        ],
+        "actual_point_uv": [
+          616.017922941789,
+          811.5604374532242
+        ],
+        "winner_source_row": 5236767,
+        "original_v003_sample_id": 5411919,
+        "winner_XYZ_m": [
+          2.713563919067383,
+          -2.066284418106079,
+          -1.0398342609405518
+        ],
+        "winner_face_id": 92451,
+        "winner_object_id": 676,
+        "winner_object": "ZS601_Floor",
+        "first_hit_face_id": 203976,
+        "first_hit_object_id": 1436,
+        "first_hit_object": "ZS601_TableChair_East0_FrameWeldedV53",
+        "winner_camera_Z_m": 3.2798642311682555,
+        "first_hit_camera_Z_m": 1.8033604145050048,
+        "behind_first_hit_m": 1.4765038166632507,
+        "float64_triangle_parameter_check": {
+          "t_after_near_m": 1.6033605465466005,
+          "u": 0.5006800964642003,
+          "v": 0.19258553325831607,
+          "inside_with_1e-5_tolerance": true
+        },
+        "float64_triangle_check_Z_error_m": 1.3204159565738394e-07
+      },
+      {
+        "image_id": 3505,
+        "pixel_flat": 555250,
+        "pixel_xy": [
+          370,
+          867
+        ],
+        "actual_point_uv": [
+          370.838406564218,
+          867.7260709682326
+        ],
+        "winner_source_row": 5628012,
+        "original_v003_sample_id": 5803164,
+        "winner_XYZ_m": [
+          3.0427067279815674,
+          -0.5342793464660645,
+          -1.0335768461227417
+        ],
+        "winner_face_id": 92451,
+        "winner_object_id": 676,
+        "winner_object": "ZS601_Floor",
+        "first_hit_face_id": 272507,
+        "first_hit_object_id": 1455,
+        "first_hit_object": "ZS601_TableChair_East4_Back",
+        "winner_camera_Z_m": 2.8115110940718324,
+        "first_hit_camera_Z_m": 1.359373641014099,
+        "behind_first_hit_m": 1.4521374530577333,
+        "float64_triangle_parameter_check": {
+          "t_after_near_m": 1.1593736064611928,
+          "u": 0.11804319511375512,
+          "v": 0.29542346176420486,
+          "inside_with_1e-5_tolerance": true
+        },
+        "float64_triangle_check_Z_error_m": 3.455290631393382e-08
+      },
+      {
+        "image_id": 3520,
+        "pixel_flat": 240345,
+        "pixel_xy": [
+          345,
+          375
+        ],
+        "actual_point_uv": [
+          345.89605832805836,
+          375.9056790927659
+        ],
+        "winner_source_row": 5389206,
+        "original_v003_sample_id": 5564358,
+        "winner_XYZ_m": [
+          2.6387791633605957,
+          2.205206871032715,
+          1.3925153017044067
+        ],
+        "winner_face_id": 753033,
+        "winner_object_id": 2080,
+        "winner_object": "ZS601_Wall_North",
+        "first_hit_face_id": 106030,
+        "first_hit_object_id": 872,
+        "first_hit_object": "ZS601_NorthV34_SpeakerGrille",
+        "winner_camera_Z_m": 2.481514368148396,
+        "first_hit_camera_Z_m": 1.921703290939331,
+        "behind_first_hit_m": 0.559811077209065,
+        "float64_triangle_parameter_check": {
+          "t_after_near_m": 1.7217034098246096,
+          "u": 0.43912568857063056,
+          "v": 0.17388174590188543,
+          "inside_with_1e-5_tolerance": true
+        },
+        "float64_triangle_check_Z_error_m": 1.1888527851056097e-07
+      },
+      {
+        "image_id": 3520,
+        "pixel_flat": 232023,
+        "pixel_xy": [
+          343,
+          362
+        ],
+        "actual_point_uv": [
+          343.6255268019649,
+          362.78284022216224
+        ],
+        "winner_source_row": 5389017,
+        "original_v003_sample_id": 5564169,
+        "winner_XYZ_m": [
+          2.6189420223236084,
+          2.203993558883667,
+          1.4457064867019653
+        ],
+        "winner_face_id": 753033,
+        "winner_object_id": 2080,
+        "winner_object": "ZS601_Wall_North",
+        "first_hit_face_id": 105611,
+        "first_hit_object_id": 866,
+        "first_hit_object": "ZS601_NorthV34_SpeakerBadge",
+        "winner_camera_Z_m": 2.4595887109494585,
+        "first_hit_camera_Z_m": 1.902379584312439,
+        "behind_first_hit_m": 0.5572091266370196,
+        "float64_triangle_parameter_check": {
+          "t_after_near_m": 1.70237966299625,
+          "u": 0.8312286924179789,
+          "v": 0.0733646265919311,
+          "inside_with_1e-5_tolerance": true
+        },
+        "float64_triangle_check_Z_error_m": 7.868381102227318e-08
+      },
+      {
+        "image_id": 3520,
+        "pixel_flat": 571925,
+        "pixel_xy": [
+          405,
+          893
+        ],
+        "actual_point_uv": [
+          405.2482026394671,
+          893.870165171199
+        ],
+        "winner_source_row": 5359420,
+        "original_v003_sample_id": 5534572,
+        "winner_XYZ_m": [
+          2.670793294906616,
+          2.0351147651672363,
+          -1.0192883014678955
+        ],
+        "winner_face_id": 92450,
+        "winner_object_id": 676,
+        "winner_object": "ZS601_Floor",
+        "first_hit_face_id": 95735,
+        "first_hit_object_id": 725,
+        "first_hit_object": "ZS601_LowV36_WastebinLiner",
+        "winner_camera_Z_m": 2.6097608787387347,
+        "first_hit_camera_Z_m": 2.1001471996307375,
+        "behind_first_hit_m": 0.5096136791079973,
+        "float64_triangle_parameter_check": {
+          "t_after_near_m": 1.9001473062544407,
+          "u": 0.12084909812808693,
+          "v": 0.31064652523266345,
+          "inside_with_1e-5_tolerance": true
+        },
+        "float64_triangle_check_Z_error_m": 1.066237031999151e-07
+      },
+      {
+        "image_id": 3571,
+        "pixel_flat": 139520,
+        "pixel_xy": [
+          0,
+          218
+        ],
+        "actual_point_uv": [
+          0.2004454400652662,
+          218.06892183975378
+        ],
+        "winner_source_row": 1075061,
+        "original_v003_sample_id": 1083922,
+        "winner_XYZ_m": [
+          -2.565361976623535,
+          1.8869078159332275,
+          1.4452911615371704
+        ],
+        "winner_face_id": 753033,
+        "winner_object_id": 2080,
+        "winner_object": "ZS601_Wall_North",
+        "first_hit_face_id": 752991,
+        "first_hit_object_id": 2078,
+        "first_hit_object": "ZS601_WallSpeakerLeft",
+        "winner_camera_Z_m": 1.4739790235454133,
+        "first_hit_camera_Z_m": 1.0760235905647277,
+        "behind_first_hit_m": 0.3979554329806856,
+        "float64_triangle_parameter_check": {
+          "t_after_near_m": 0.8760236484421949,
+          "u": 0.04673942823808567,
+          "v": 0.9357510945326584,
+          "inside_with_1e-5_tolerance": true
+        },
+        "float64_triangle_check_Z_error_m": 5.787746726326759e-08
+      },
+      {
+        "image_id": 3571,
+        "pixel_flat": 577395,
+        "pixel_xy": [
+          115,
+          902
+        ],
+        "actual_point_uv": [
+          115.43321582649887,
+          902.4376303630036
+        ],
+        "winner_source_row": 1425672,
+        "original_v003_sample_id": 1449508,
+        "winner_XYZ_m": [
+          -2.1463325023651123,
+          1.9125367403030396,
+          -0.2346625030040741
+        ],
+        "winner_face_id": 753032,
+        "winner_object_id": 2080,
+        "winner_object": "ZS601_Wall_North",
+        "first_hit_face_id": 29,
+        "first_hit_object_id": 2,
+        "first_hit_object": "ZS601_BoardTray",
+        "winner_camera_Z_m": 1.2331333711938457,
+        "first_hit_camera_Z_m": 1.0033750653266906,
+        "behind_first_hit_m": 0.22975830586715507,
+        "float64_triangle_parameter_check": {
+          "t_after_near_m": 0.8033750665858657,
+          "u": 0.0032383180480679025,
+          "v": 0.19377929622916637,
+          "inside_with_1e-5_tolerance": true
+        },
+        "float64_triangle_check_Z_error_m": 1.259174986500966e-09
+      },
+      {
+        "image_id": 3571,
+        "pixel_flat": 176000,
+        "pixel_xy": [
+          0,
+          275
+        ],
+        "actual_point_uv": [
+          0.44096200810753317,
+          275.0599005453899
+        ],
+        "winner_source_row": 1440704,
+        "original_v003_sample_id": 1464540,
+        "winner_XYZ_m": [
+          -2.405174493789673,
+          1.7671256065368652,
+          1.1879955530166626
+        ],
+        "winner_face_id": 752957,
+        "winner_object_id": 2078,
+        "winner_object": "ZS601_WallSpeakerLeft",
+        "first_hit_face_id": 752991,
+        "first_hit_object_id": 2078,
+        "first_hit_object": "ZS601_WallSpeakerLeft",
+        "winner_camera_Z_m": 1.2881577304289016,
+        "first_hit_camera_Z_m": 1.0743225336074829,
+        "behind_first_hit_m": 0.21383519682141872,
+        "float64_triangle_parameter_check": {
+          "t_after_near_m": 0.8743225810209126,
+          "u": 0.08523098999847269,
+          "v": 0.2014621552645082,
+          "inside_with_1e-5_tolerance": true
+        },
+        "float64_triangle_check_Z_error_m": 4.741342984893038e-08
+      },
+      {
+        "image_id": 3583,
+        "pixel_flat": 429553,
+        "pixel_xy": [
+          113,
+          671
+        ],
+        "actual_point_uv": [
+          113.94212854053839,
+          671.9128133200599
+        ],
+        "winner_source_row": 1554694,
+        "original_v003_sample_id": 1594580,
+        "winner_XYZ_m": [
+          -1.8567063808441162,
+          -5.246192455291748,
+          -0.966859757900238
+        ],
+        "winner_face_id": 92453,
+        "winner_object_id": 676,
+        "winner_object": "ZS601_Floor",
+        "first_hit_face_id": 329116,
+        "first_hit_object_id": 1470,
+        "first_hit_object": "ZS601_TableChair_West1_Back",
+        "winner_camera_Z_m": 5.53673230603806,
+        "first_hit_camera_Z_m": 2.0634879589080812,
+        "behind_first_hit_m": 3.473244347129979,
+        "float64_triangle_parameter_check": {
+          "t_after_near_m": 1.863487957112686,
+          "u": 0.23819547465054416,
+          "v": 0.254215704844014,
+          "inside_with_1e-5_tolerance": true
+        },
+        "float64_triangle_check_Z_error_m": 1.7953949438265226e-09
+      },
+      {
+        "image_id": 3583,
+        "pixel_flat": 406493,
+        "pixel_xy": [
+          93,
+          635
+        ],
+        "actual_point_uv": [
+          93.21668689782467,
+          635.3970349372569
+        ],
+        "winner_source_row": 1510318,
+        "original_v003_sample_id": 1534814,
+        "winner_XYZ_m": [
+          -1.6764121055603027,
+          -6.128774166107178,
+          -0.7460404634475708
+        ],
+        "winner_face_id": 48200,
+        "winner_object_id": 320,
+        "winner_object": "ZS601_CaseV3_LowerDoor_1_1",
+        "first_hit_face_id": 349219,
+        "first_hit_object_id": 1476,
+        "first_hit_object": "ZS601_TableChair_West2_FrameWeldedV53",
+        "winner_camera_Z_m": 6.26962728798181,
+        "first_hit_camera_Z_m": 3.2108935832977297,
+        "behind_first_hit_m": 3.05873370468408,
+        "float64_triangle_parameter_check": {
+          "t_after_near_m": 3.010893876724509,
+          "u": 0.3255542449477659,
+          "v": 0.11964725227151735,
+          "inside_with_1e-5_tolerance": true
+        },
+        "float64_triangle_check_Z_error_m": 2.934267793186507e-07
+      },
+      {
+        "image_id": 3583,
+        "pixel_flat": 421843,
+        "pixel_xy": [
+          83,
+          659
+        ],
+        "actual_point_uv": [
+          83.49713850063657,
+          659.9562369259879
+        ],
+        "winner_source_row": 1542818,
+        "original_v003_sample_id": 1582704,
+        "winner_XYZ_m": [
+          -1.5755128860473633,
+          -5.913759231567383,
+          -0.9713300466537476
+        ],
+        "winner_face_id": 92452,
+        "winner_object_id": 676,
+        "winner_object": "ZS601_Floor",
+        "first_hit_face_id": 348920,
+        "first_hit_object_id": 1476,
+        "first_hit_object": "ZS601_TableChair_West2_FrameWeldedV53",
+        "winner_camera_Z_m": 6.041168808474547,
+        "first_hit_camera_Z_m": 3.1937820434570314,
+        "behind_first_hit_m": 2.8473867650175153,
+        "float64_triangle_parameter_check": {
+          "t_after_near_m": 2.9937822753549317,
+          "u": 0.3393439676597149,
+          "v": 0.06999792481691378,
+          "inside_with_1e-5_tolerance": true
+        },
+        "float64_triangle_check_Z_error_m": 2.3189790043787184e-07
+      }
+    ]
+  },
+  "protected_input_sha256": {
+    "D:\\codex\\blenderProject\\experiments\\2026-09-22\\depth-methods-noglass-v007\\evaluate_depth.py": "4fe3eeaa86195c060daabc0acabd8291cf967443504674aac6a83326b4813440",
+    "D:\\codex\\blenderProject\\3dgsResult\\zs601-mesh-noglass-v006\\cloud_1cm\\points_mesh_1cm_noglass.ply": "68f26fca61b4c1424c1f45f2f4983c4c42cf389abc23d6e0afadd9d48819de5b",
+    "D:\\codex\\blenderProject\\scenes\\zs601-meetingroom\\synthetic-training-v001\\source\\geometry.npz": "e3a2384459124e5c431a14c229e6b2a3270ec6586b9d03f4bdbcb14753e606d4",
+    "D:\\codex\\blenderProject\\3dgsResult\\zs601-mesh-noglass-v006\\audit\\excluded_clear_glass_faces.npy": "7c6370bb145bd61ef3aeec792c80f11c0cfc65dab895d95bf8e6bad8e31c742d",
+    "D:\\codex\\blenderProject\\3dgsResult\\zs601-mesh-noglass-v006\\cloud_1cm\\mesh_face_id.npy": "b52615ada1e55ffae56cb76e0367fcba16b1cc9b86aa37b5b8de4d1ae374feb7",
+    "D:\\codex\\blenderProject\\3dgsResult\\zs601-mesh-noglass-v006\\cloud_1cm\\source_sample_id.npy": "0cd3f529a6dd75eabe714614d99306466ad565d189e1a112cdb3a67334df1563",
+    "D:\\codex\\blenderProject\\3dgsResult\\zs601-mesh-noglass-v006\\audit\\material_audit.json": "61ee900c21758dc7d9864e47e2223878460eb2806f382a2f392a60fbf17ac21d",
+    "D:\\codex\\blenderProject\\3dgsResult\\zs601-mesh-noglass-v006\\audit\\face_material_id.npy": "c594de7aa17907c324f1f5cd68c81accfeaee5305bbe2743ddcf160696822400",
+    "D:\\codex\\blenderProject\\experiments\\2026-09-22\\depth-methods-noglass-v007\\run_spec.json": "2569813524115ca4fba11a7ac00593e6ad0d81e4c62a06ef2b97e911e5370485",
+    "D:\\codex\\blenderProject\\3dgsResult\\zs601-depth-methods-v007\\selected_views.json": "829d0312f1e9e34fb9ff48bac0cae3d418d22b4b8f97f6c6db02b35fa73ea41d",
+    "D:\\codex\\blenderProject\\3dgsResult\\zs601-depth-methods-v007\\method_b_zbuffer\\winner_source_id\\003202.npy": "16f97d77f01731d5e86cbd6a34ad6615724fb5969028a8871aae03e3c99ffebc",
+    "D:\\codex\\blenderProject\\3dgsResult\\zs601-depth-methods-v007\\method_b_zbuffer\\winner_source_id\\003340.npy": "7fc7735bfbba3f4e0a521e06613bba5681510cc32a870a371564cd258fe4b263",
+    "D:\\codex\\blenderProject\\3dgsResult\\zs601-depth-methods-v007\\method_b_zbuffer\\winner_source_id\\003376.npy": "771bd794707fed71c5bfaebdb87dc2555c12dda1320b337ad6400ff2cf314650",
+    "D:\\codex\\blenderProject\\3dgsResult\\zs601-depth-methods-v007\\method_b_zbuffer\\winner_source_id\\003388.npy": "e8a911a90856faa30621adde1f87d9cf3df2f87cf74982315925837d15c726f6",
+    "D:\\codex\\blenderProject\\3dgsResult\\zs601-depth-methods-v007\\method_b_zbuffer\\winner_source_id\\003409.npy": "43a41ec45f3fdd3da89bef7975ee45220a90fa99aeafcc9490fe00d6c9d1e2ef",
+    "D:\\codex\\blenderProject\\3dgsResult\\zs601-depth-methods-v007\\method_b_zbuffer\\winner_source_id\\003481.npy": "16975e0a31189f780c2eeee25f5047f8990e31c04fdd9e18c7659c8d4e1cf63c",
+    "D:\\codex\\blenderProject\\3dgsResult\\zs601-depth-methods-v007\\method_b_zbuffer\\winner_source_id\\003505.npy": "d1ca5bed7aaf19bb7c4175e10b41faed56bc417973b5889e0e2115cafacf127c",
+    "D:\\codex\\blenderProject\\3dgsResult\\zs601-depth-methods-v007\\method_b_zbuffer\\winner_source_id\\003520.npy": "8b00e8bf1764f7f64d1f3df4a48e5050923a09df2893300476c62585eed77f2b",
+    "D:\\codex\\blenderProject\\3dgsResult\\zs601-depth-methods-v007\\method_b_zbuffer\\winner_source_id\\003571.npy": "bf198e2339bd825a9773c30f54884e3746faf41372cc49314beeccf3d98199d4",
+    "D:\\codex\\blenderProject\\3dgsResult\\zs601-depth-methods-v007\\method_b_zbuffer\\winner_source_id\\003583.npy": "c665c500aa568d3647525b283f5b7cece4e64d651ca6c1832d17fb9ee7884b03"
+  },
+  "protected_inputs_unchanged": true,
+  "no_shared_output_modified": true,
+  "no_projection_rerun": true,
+  "elapsed_seconds": 0.8593704000813887
+}

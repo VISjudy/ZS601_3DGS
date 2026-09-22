@@ -1,0 +1,12 @@
+{
+  "status": "PASS_FORMATS_COORDINATES_PROVENANCE_AND_ROUNDTRIPS",
+  "checked_views": 10,
+  "depth_PNGs": 20,
+  "backprojected_PLYs": 22,
+  "cloud_sha256_unchanged": true,
+  "source_geometry_unchanged": true,
+  "source_gaussian_unchanged": true,
+  "Gaussian_fields_other_than_opacity_exact": true,
+  "random_camera_selection_reproduced": true,
+  "occlusion_correctness_is_measured_not_assumed": true
+}

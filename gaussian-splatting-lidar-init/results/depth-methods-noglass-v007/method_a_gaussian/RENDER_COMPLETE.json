@@ -1,0 +1,6 @@
+{
+  "status": "SMOKE_10_NOT_TRAINED",
+  "views": 10,
+  "optimization_steps": 0,
+  "gaussian_ply_sha256": "430011f5e22c20359ecdaa2aeec621439b7c3ea56ed1500ab9f1478264973c28"
+}

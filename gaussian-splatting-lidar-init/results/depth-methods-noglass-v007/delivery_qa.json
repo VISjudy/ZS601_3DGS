@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "code_cells_executed": 3,
+  "notebook_errors": 0,
+  "raw_method_depth_PNGs": 20,
+  "method_PNGs": 80,
+  "backprojected_PLYs": 22,
+  "initialized_Gaussian_PLYs": 1,
+  "final_comparison_PNGs": 11,
+  "local_and_repository_markdown_targets_checked": 34,
+  "published_reproducibility_files_exact": true,
+  "evaluator_sha256_matches_independent_review": true,
+  "source_input_confirmation": "same noglass synthetic 1cm",
+  "scope": "artifact and execution QA; point z-buffer occlusion quality failed, Gaussian first-hit exactness not accepted"
+}

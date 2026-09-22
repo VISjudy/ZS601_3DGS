@@ -155,3 +155,17 @@ with 797,520 points for future formal initialization. Same camera poses,
 k=3, scale=0.5, and original coverage
 masks; no semantic image masks or training. Opaque-surface color fallback
 limitations remain. See the actual executed notebook and per-view metrics.
+
+
+## Ten-view depth smoke v007
+
+[Same-cloud depth comparison](results/depth-methods-noglass-v007/README.md):
+ten seeded cameras, no-glass 1 cm cloud, k=3 scale0.5 nominal-opacity1 Gaussian
+depth versus pure nearest-point z-buffer. Both uint16-mm PNGs are decoded into
+colored PLYs and checked against source points and independent no-glass mesh
+first hits. Coverage is 99.9723% versus 39.2209%; common-mask depth MAE is
+22.0188 versus 100.7400 mm. Small nearest-point error does not certify visibility:
+z-buffer reveals hidden surfaces through sampling gaps, while Gaussian depth
+has foreground edge expansion. All raw outputs are preserved; no training or
+GT-aided correction. Actual executed notebook and all ten comparison figures
+are included. Colab GPU released after verified retrieval.

@@ -1,0 +1,34 @@
+{
+  "point_count": 7004696,
+  "sh_degree": 0,
+  "optimization_steps": 0,
+  "source_gaussian_sha256": "c984cd38e3d31e34c1db4d4afb41196bc4980fe50f1ddf924a599568fa221411",
+  "input_cloud_sha256": "68f26fca61b4c1424c1f45f2f4983c4c42cf389abc23d6e0afadd9d48819de5b",
+  "gaussian_ply_sha256": "430011f5e22c20359ecdaa2aeec621439b7c3ea56ed1500ab9f1478264973c28",
+  "changed_parameter": "opacity only",
+  "knn_k": 3,
+  "scale_factor": 0.5,
+  "sigma_formula": "0.5 * sqrt(mean(d_nearest3 ** 2))",
+  "nominal_opacity": 1.0,
+  "actual_float32_opacity": {
+    "min": 1.0,
+    "median": 1.0,
+    "max": 1.0
+  },
+  "opacity_logits": {
+    "min": 20.0,
+    "median": 20.0,
+    "max": 20.0
+  },
+  "mathematical_sigmoid20": 0.9999999979388463,
+  "kernel_per_fragment_alpha_cap": 0.99,
+  "kernel_near_cutoff_m": 0.2,
+  "scales_metres": {
+    "min": 0.0006092521362006664,
+    "median": 0.004407880827784538,
+    "max": 0.009362607263028622
+  },
+  "ply_reload_exact": true,
+  "xyz_equal_input": true,
+  "source_other_fields_preserved": true
+}

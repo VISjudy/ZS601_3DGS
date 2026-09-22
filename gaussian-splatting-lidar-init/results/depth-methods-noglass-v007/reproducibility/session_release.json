@@ -1,0 +1,7 @@
+{
+  "session": "zs601-noglass-0922-v006",
+  "stop_exit_code": 0,
+  "stop_response": "Session terminated.",
+  "sessions_response": "No active sessions found on server.",
+  "artifacts_downloaded_and_hash_verified_before_stop": true
+}

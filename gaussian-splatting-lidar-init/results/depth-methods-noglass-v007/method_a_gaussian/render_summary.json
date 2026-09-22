@@ -1,0 +1,121 @@
+{
+  "status": "PASS",
+  "views": 10,
+  "rows": [
+    {
+      "image_id": 3202,
+      "name": "003202.png",
+      "visible_gaussians": 2647530,
+      "valid_depth_pixels": 709120,
+      "depth_coverage": 1.0,
+      "rgb_coverage_alpha95": 0.9999887184115523,
+      "strictly_empty_alpha16_fraction": 0.0,
+      "quantization_max_error_mm": 0.5002441406247726,
+      "seconds": 0.9375183582305908
+    },
+    {
+      "image_id": 3340,
+      "name": "003340.png",
+      "visible_gaussians": 748268,
+      "valid_depth_pixels": 709118,
+      "depth_coverage": 0.9999971796028881,
+      "rgb_coverage_alpha95": 0.999770137635379,
+      "strictly_empty_alpha16_fraction": 0.0,
+      "quantization_max_error_mm": 0.5001163482667437,
+      "seconds": 0.9407901763916016
+    },
+    {
+      "image_id": 3376,
+      "name": "003376.png",
+      "visible_gaussians": 933750,
+      "valid_depth_pixels": 709120,
+      "depth_coverage": 1.0,
+      "rgb_coverage_alpha95": 0.9999055166967509,
+      "strictly_empty_alpha16_fraction": 0.0,
+      "quantization_max_error_mm": 0.5001125335692969,
+      "seconds": 0.9470474720001221
+    },
+    {
+      "image_id": 3388,
+      "name": "003388.png",
+      "visible_gaussians": 537107,
+      "valid_depth_pixels": 709120,
+      "depth_coverage": 1.0,
+      "rgb_coverage_alpha95": 0.9996375789711192,
+      "strictly_empty_alpha16_fraction": 0.0,
+      "quantization_max_error_mm": 0.5001201629637464,
+      "seconds": 0.9293129444122314
+    },
+    {
+      "image_id": 3409,
+      "name": "003409.png",
+      "visible_gaussians": 182968,
+      "valid_depth_pixels": 709120,
+      "depth_coverage": 1.0,
+      "rgb_coverage_alpha95": 0.996777696299639,
+      "strictly_empty_alpha16_fraction": 0.0,
+      "quantization_max_error_mm": 0.500059127807706,
+      "seconds": 0.953113317489624
+    },
+    {
+      "image_id": 3481,
+      "name": "003481.png",
+      "visible_gaussians": 75521,
+      "valid_depth_pixels": 709120,
+      "depth_coverage": 1.0,
+      "rgb_coverage_alpha95": 0.9783605031588448,
+      "strictly_empty_alpha16_fraction": 0.0,
+      "quantization_max_error_mm": 0.5000610351562074,
+      "seconds": 0.8136835098266602
+    },
+    {
+      "image_id": 3505,
+      "name": "003505.png",
+      "visible_gaussians": 1015066,
+      "valid_depth_pixels": 709120,
+      "depth_coverage": 1.0,
+      "rgb_coverage_alpha95": 0.9998025722021661,
+      "strictly_empty_alpha16_fraction": 0.0,
+      "quantization_max_error_mm": 0.5002441406247726,
+      "seconds": 0.9465994834899902
+    },
+    {
+      "image_id": 3520,
+      "name": "003520.png",
+      "visible_gaussians": 433135,
+      "valid_depth_pixels": 707158,
+      "depth_coverage": 0.997233190433213,
+      "rgb_coverage_alpha95": 0.9962587432310469,
+      "strictly_empty_alpha16_fraction": 0.0020744020758122744,
+      "quantization_max_error_mm": 0.5001106262207955,
+      "seconds": 0.8740270137786865
+    },
+    {
+      "image_id": 3571,
+      "name": "003571.png",
+      "visible_gaussians": 89075,
+      "valid_depth_pixels": 709120,
+      "depth_coverage": 1.0,
+      "rgb_coverage_alpha95": 0.9964025834837545,
+      "strictly_empty_alpha16_fraction": 0.0,
+      "quantization_max_error_mm": 0.5000610351562074,
+      "seconds": 0.9295492172241211
+    },
+    {
+      "image_id": 3583,
+      "name": "003583.png",
+      "visible_gaussians": 1656966,
+      "valid_depth_pixels": 709120,
+      "depth_coverage": 1.0,
+      "rgb_coverage_alpha95": 0.9998773127256317,
+      "strictly_empty_alpha16_fraction": 0.0,
+      "quantization_max_error_mm": 0.5002365112307672,
+      "seconds": 0.9294643402099609
+    }
+  ],
+  "seconds": 9.202219724655151,
+  "depth": "alpha / sum(T_i * alpha_i / Z_i)",
+  "camera_Z_metres": true,
+  "depth_mask_alpha_min": 0.5,
+  "rgb_mask_alpha_min": 0.95
+}

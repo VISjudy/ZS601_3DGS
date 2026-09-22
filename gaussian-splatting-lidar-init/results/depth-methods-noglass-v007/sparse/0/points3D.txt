@@ -1,0 +1,2 @@
+# POINT3D_ID X Y Z R G B ERROR TRACK[]
+# Initial input cloud. No SfM observations or reprojection residuals; ERROR=0 placeholder.

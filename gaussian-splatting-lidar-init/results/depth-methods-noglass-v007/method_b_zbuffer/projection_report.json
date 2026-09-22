@@ -1,0 +1,619 @@
+{
+  "schema": "zs601-depth-method-b-zbuffer-v007",
+  "status": "PASS",
+  "method": "Pure point projection with strict nearest camera Z per pixel",
+  "input_cloud": "D:\\codex\\blenderProject\\3dgsResult\\zs601-mesh-noglass-v006\\cloud_1cm\\points_mesh_1cm_noglass.ply",
+  "input_cloud_sha256": "68f26fca61b4c1424c1f45f2f4983c4c42cf389abc23d6e0afadd9d48819de5b",
+  "input_points": 7004696,
+  "view_ids": [
+    3202,
+    3340,
+    3376,
+    3388,
+    3409,
+    3481,
+    3505,
+    3520,
+    3571,
+    3583
+  ],
+  "selected_views_sha256": "829d0312f1e9e34fb9ff48bac0cae3d418d22b4b8f97f6c6db02b35fa73ea41d",
+  "run_spec_sha256": "2569813524115ca4fba11a7ac00593e6ad0d81e4c62a06ef2b97e911e5370485",
+  "protected_inputs_unchanged": true,
+  "world_to_camera": "pc = xyz @ R.T + t; q is COLMAP wxyz; matrix checked independently with scipy Rotation",
+  "projection": "u = fx * X/Z + cx; v = fy * Y/Z + cy; pixel = floor(u),floor(v)",
+  "pixel_centres": "COLMAP top-left pixel centre (0.5,0.5); no extra projection offset",
+  "near_clip_m": 0.2,
+  "far_clip_m": 65.535,
+  "clipping": "Z > near and Z <= far; 0 <= u < width and 0 <= v < height",
+  "selection_precision": "float64 camera coordinates and depth; np.minimum.at reduction",
+  "ties": "Exact equal float64 camera Z: lowest zero-based input PLY vertex index wins",
+  "winner_source_id_semantics": "int32 zero-based row in input_cloud; -1 invalid. Prior-cloud sample ID is obtainable via the adjacent source_sample_id.npy mapping.",
+  "depth_PNG_encoding": "uint16 single-channel camera-Z millimetres, np.rint(Z*1000), 0 invalid",
+  "depth_float_encoding": "float32 camera-Z metres, 0 invalid",
+  "mask_encoding": "uint8 single-channel, 255 valid and 0 empty",
+  "RGB_encoding": "uint8 RGB copied exactly from nearest original point, black invalid pixels",
+  "point_radius": 0,
+  "interpolation": false,
+  "hole_filling": false,
+  "HPR": false,
+  "mesh_or_GT_used_to_remove_points": false,
+  "Gaussian_splats_used": false,
+  "PLY_generated": false,
+  "independent_verification": "All projected candidates independently sorted by pixel, Z, source ID; every winning source ID and depth exactly matches reduction. Every winner is reprojected, RGB checked, and PNG/NPY files reread with value/dtype/channel checks.",
+  "aggregate": {
+    "views": 10,
+    "total_pixels": 7091200,
+    "valid_pixels": 2781236,
+    "coverage_fraction": 0.39220949909747294,
+    "coverage_percent": 39.22094990974729,
+    "min_view_coverage_percent": 9.621361687725631,
+    "max_view_coverage_percent": 63.106244359205775,
+    "projected_points_in_images": 8204223,
+    "same_pixel_discarded_points": 5422987,
+    "same_pixel_farther_than_3cm_discarded_points": 4470058
+  },
+  "views": [
+    {
+      "image_id": 3202,
+      "name": "003202.png",
+      "status": "PASS",
+      "source_points": 7004696,
+      "rejected_Z_le_near": 1710624,
+      "rejected_Z_gt_far": 0,
+      "rejected_outside_image_with_valid_Z": 2673952,
+      "projected_points_in_image": 2620120,
+      "total_pixels": 709120,
+      "valid_pixels": 447499,
+      "empty_pixels": 261621,
+      "coverage_fraction": 0.6310624435920578,
+      "coverage_percent": 63.106244359205775,
+      "same_pixel_discarded_points": 2172621,
+      "same_pixel_farther_than_3cm_discarded_points": 1828580,
+      "same_pixel_0_to_3cm_inclusive_discarded_points": 344041,
+      "same_pixel_equal_minimum_Z_ties_discarded": 0,
+      "min_valid_camera_Z_m": 0.6691977096681372,
+      "max_valid_camera_Z_m": 8.239813985111988,
+      "max_depth_png_quantization_error_m": 0.000499998271966895,
+      "independent_all_candidate_lexicographic_nearest_check": "PASS",
+      "all_winners_reproject_correctly": true,
+      "all_RGB_exact_winner_values": true,
+      "all_PNG_values_dtype_channels_and_CRC_roundtrip": "PASS",
+      "all_NPY_values_dtype_shape_roundtrip": "PASS",
+      "finite_values": true,
+      "files": {
+        "depth": {
+          "path": "depth/003202.png",
+          "bytes": 609822,
+          "sha256": "6ed3b86ff9b6666e7dee70c475d633888340ce8281b1da28870e18a88e6484bd"
+        },
+        "mask": {
+          "path": "masks/003202.png",
+          "bytes": 77109,
+          "sha256": "ee76c49ed0a8b8afbd3a6645d647ee0c0cabe9e99331e2d22fb4d7a3b6359968"
+        },
+        "RGB": {
+          "path": "images/003202.png",
+          "bytes": 868490,
+          "sha256": "c23f0e015255ef3f82b1ff9cf68cea72740be632444fefb6874f54340fcac3d1"
+        },
+        "depth_float": {
+          "path": "depth_float/003202.npy",
+          "bytes": 2836608,
+          "sha256": "58747f55328dc31d4ffa396ead4a4c303162b04063af63c2e23659423d692f47"
+        },
+        "winner_source_id": {
+          "path": "winner_source_id/003202.npy",
+          "bytes": 2836608,
+          "sha256": "16f97d77f01731d5e86cbd6a34ad6615724fb5969028a8871aae03e3c99ffebc"
+        }
+      },
+      "elapsed_seconds": 1.1299570999108255
+    },
+    {
+      "image_id": 3340,
+      "name": "003340.png",
+      "status": "PASS",
+      "source_points": 7004696,
+      "rejected_Z_le_near": 4479069,
+      "rejected_Z_gt_far": 0,
+      "rejected_outside_image_with_valid_Z": 1787591,
+      "projected_points_in_image": 738036,
+      "total_pixels": 709120,
+      "valid_pixels": 346361,
+      "empty_pixels": 362759,
+      "coverage_fraction": 0.48843778203971117,
+      "coverage_percent": 48.84377820397112,
+      "same_pixel_discarded_points": 391675,
+      "same_pixel_farther_than_3cm_discarded_points": 335553,
+      "same_pixel_0_to_3cm_inclusive_discarded_points": 56122,
+      "same_pixel_equal_minimum_Z_ties_discarded": 0,
+      "min_valid_camera_Z_m": 0.7109308691059475,
+      "max_valid_camera_Z_m": 3.3841839999997134,
+      "max_depth_png_quantization_error_m": 0.0004999983095754779,
+      "independent_all_candidate_lexicographic_nearest_check": "PASS",
+      "all_winners_reproject_correctly": true,
+      "all_RGB_exact_winner_values": true,
+      "all_PNG_values_dtype_channels_and_CRC_roundtrip": "PASS",
+      "all_NPY_values_dtype_shape_roundtrip": "PASS",
+      "finite_values": true,
+      "files": {
+        "depth": {
+          "path": "depth/003340.png",
+          "bytes": 679795,
+          "sha256": "334250d3f602d4968b8a382b54683873f18333e415cd2882e47dcbce75ddbadc"
+        },
+        "mask": {
+          "path": "masks/003340.png",
+          "bytes": 118340,
+          "sha256": "cce5981d134e84e4eb6b7bb3e8f448ec4b6053a4b8d9e64d0717b9e7f15ed3ff"
+        },
+        "RGB": {
+          "path": "images/003340.png",
+          "bytes": 730909,
+          "sha256": "3d3cc5cbd90f8dc787ff08144b9faa0cb1414ce03cbe52793f5ee17f41c38ee5"
+        },
+        "depth_float": {
+          "path": "depth_float/003340.npy",
+          "bytes": 2836608,
+          "sha256": "0b336170f2b3977be540c941a3efdaa00e52da4c0873071d16d56d9daadc0fc1"
+        },
+        "winner_source_id": {
+          "path": "winner_source_id/003340.npy",
+          "bytes": 2836608,
+          "sha256": "7fc7735bfbba3f4e0a521e06613bba5681510cc32a870a371564cd258fe4b263"
+        }
+      },
+      "elapsed_seconds": 0.6495035999687389
+    },
+    {
+      "image_id": 3376,
+      "name": "003376.png",
+      "status": "PASS",
+      "source_points": 7004696,
+      "rejected_Z_le_near": 3905941,
+      "rejected_Z_gt_far": 0,
+      "rejected_outside_image_with_valid_Z": 2177142,
+      "projected_points_in_image": 921613,
+      "total_pixels": 709120,
+      "valid_pixels": 346280,
+      "empty_pixels": 362840,
+      "coverage_fraction": 0.4883235559566787,
+      "coverage_percent": 48.83235559566787,
+      "same_pixel_discarded_points": 575333,
+      "same_pixel_farther_than_3cm_discarded_points": 490559,
+      "same_pixel_0_to_3cm_inclusive_discarded_points": 84774,
+      "same_pixel_equal_minimum_Z_ties_discarded": 0,
+      "min_valid_camera_Z_m": 0.6862271044225139,
+      "max_valid_camera_Z_m": 4.461605282779721,
+      "max_depth_png_quantization_error_m": 0.000499998382215816,
+      "independent_all_candidate_lexicographic_nearest_check": "PASS",
+      "all_winners_reproject_correctly": true,
+      "all_RGB_exact_winner_values": true,
+      "all_PNG_values_dtype_channels_and_CRC_roundtrip": "PASS",
+      "all_NPY_values_dtype_shape_roundtrip": "PASS",
+      "finite_values": true,
+      "files": {
+        "depth": {
+          "path": "depth/003376.png",
+          "bytes": 670613,
+          "sha256": "bc5850fe5e11522d54327076d33f39eead2acf1fa258351a02a88d0119924d08"
+        },
+        "mask": {
+          "path": "masks/003376.png",
+          "bytes": 108507,
+          "sha256": "67c4fbdf0230fd0207cf5b5d6062e1b4171be8f831c2021d0d84e086c77aa084"
+        },
+        "RGB": {
+          "path": "images/003376.png",
+          "bytes": 783449,
+          "sha256": "f179c874520191935db778e3e14f4f6fefd503adfcde00e46cfcbd2f7f03cd2b"
+        },
+        "depth_float": {
+          "path": "depth_float/003376.npy",
+          "bytes": 2836608,
+          "sha256": "e6aeaffd4f05126555a8c9927e283a78eee40f196f5f90b0272f751ebe358d79"
+        },
+        "winner_source_id": {
+          "path": "winner_source_id/003376.npy",
+          "bytes": 2836608,
+          "sha256": "771bd794707fed71c5bfaebdb87dc2555c12dda1320b337ad6400ff2cf314650"
+        }
+      },
+      "elapsed_seconds": 0.7008401999482885
+    },
+    {
+      "image_id": 3388,
+      "name": "003388.png",
+      "status": "PASS",
+      "source_points": 7004696,
+      "rejected_Z_le_near": 5352895,
+      "rejected_Z_gt_far": 0,
+      "rejected_outside_image_with_valid_Z": 1123559,
+      "projected_points_in_image": 528242,
+      "total_pixels": 709120,
+      "valid_pixels": 295829,
+      "empty_pixels": 413291,
+      "coverage_fraction": 0.4171776286101083,
+      "coverage_percent": 41.71776286101083,
+      "same_pixel_discarded_points": 232413,
+      "same_pixel_farther_than_3cm_discarded_points": 183135,
+      "same_pixel_0_to_3cm_inclusive_discarded_points": 49278,
+      "same_pixel_equal_minimum_Z_ties_discarded": 0,
+      "min_valid_camera_Z_m": 0.6308990231234829,
+      "max_valid_camera_Z_m": 3.959667502657381,
+      "max_depth_png_quantization_error_m": 0.0004999975407509183,
+      "independent_all_candidate_lexicographic_nearest_check": "PASS",
+      "all_winners_reproject_correctly": true,
+      "all_RGB_exact_winner_values": true,
+      "all_PNG_values_dtype_channels_and_CRC_roundtrip": "PASS",
+      "all_NPY_values_dtype_shape_roundtrip": "PASS",
+      "finite_values": true,
+      "files": {
+        "depth": {
+          "path": "depth/003388.png",
+          "bytes": 621417,
+          "sha256": "2d5cac172451f704a0c37a59a9efa2f9d964c7abc13d1d5b5a7f1e7665151d16"
+        },
+        "mask": {
+          "path": "masks/003388.png",
+          "bytes": 117754,
+          "sha256": "9dbe842be01cbcd7fc8555f6df8ba6e6d486762ccd53c222a23cd5a462755e1a"
+        },
+        "RGB": {
+          "path": "images/003388.png",
+          "bytes": 624323,
+          "sha256": "a9f18dc28bbc554334a8d941053f36308053c44467a031e54c07e982f7cb13f0"
+        },
+        "depth_float": {
+          "path": "depth_float/003388.npy",
+          "bytes": 2836608,
+          "sha256": "ad4e61e362e914414c1261c9a1a0d94bd21191c4aad682f2750677ab61a230b4"
+        },
+        "winner_source_id": {
+          "path": "winner_source_id/003388.npy",
+          "bytes": 2836608,
+          "sha256": "e8a911a90856faa30621adde1f87d9cf3df2f87cf74982315925837d15c726f6"
+        }
+      },
+      "elapsed_seconds": 0.5703642000444233
+    },
+    {
+      "image_id": 3409,
+      "name": "003409.png",
+      "status": "PASS",
+      "source_points": 7004696,
+      "rejected_Z_le_near": 5226709,
+      "rejected_Z_gt_far": 0,
+      "rejected_outside_image_with_valid_Z": 1603995,
+      "projected_points_in_image": 173992,
+      "total_pixels": 709120,
+      "valid_pixels": 153659,
+      "empty_pixels": 555461,
+      "coverage_fraction": 0.2166896999097473,
+      "coverage_percent": 21.66896999097473,
+      "same_pixel_discarded_points": 20333,
+      "same_pixel_farther_than_3cm_discarded_points": 14664,
+      "same_pixel_0_to_3cm_inclusive_discarded_points": 5669,
+      "same_pixel_equal_minimum_Z_ties_discarded": 0,
+      "min_valid_camera_Z_m": 0.6979311842534357,
+      "max_valid_camera_Z_m": 1.5298256312613203,
+      "max_depth_png_quantization_error_m": 0.000499999406146534,
+      "independent_all_candidate_lexicographic_nearest_check": "PASS",
+      "all_winners_reproject_correctly": true,
+      "all_RGB_exact_winner_values": true,
+      "all_PNG_values_dtype_channels_and_CRC_roundtrip": "PASS",
+      "all_NPY_values_dtype_shape_roundtrip": "PASS",
+      "finite_values": true,
+      "files": {
+        "depth": {
+          "path": "depth/003409.png",
+          "bytes": 268907,
+          "sha256": "f190327eb409182e00ef4afbe3cdb08d6521a73c89da949faa5df9cc60af2a0a"
+        },
+        "mask": {
+          "path": "masks/003409.png",
+          "bytes": 92549,
+          "sha256": "77b3370a114ff71f307240aa18d5f746dfb54b89fe6d09af200624367eae1e55"
+        },
+        "RGB": {
+          "path": "images/003409.png",
+          "bytes": 298910,
+          "sha256": "d1a64774951594101305874e2d25995492dbf9019fd37468413ebc4588acfec0"
+        },
+        "depth_float": {
+          "path": "depth_float/003409.npy",
+          "bytes": 2836608,
+          "sha256": "7a9c65291d255d3e68455576e7f820a87de8c3fc883b2babe4330808680d1237"
+        },
+        "winner_source_id": {
+          "path": "winner_source_id/003409.npy",
+          "bytes": 2836608,
+          "sha256": "43a41ec45f3fdd3da89bef7975ee45220a90fa99aeafcc9490fe00d6c9d1e2ef"
+        }
+      },
+      "elapsed_seconds": 0.4751265000086278
+    },
+    {
+      "image_id": 3481,
+      "name": "003481.png",
+      "status": "PASS",
+      "source_points": 7004696,
+      "rejected_Z_le_near": 6409331,
+      "rejected_Z_gt_far": 0,
+      "rejected_outside_image_with_valid_Z": 523765,
+      "projected_points_in_image": 71600,
+      "total_pixels": 709120,
+      "valid_pixels": 68227,
+      "empty_pixels": 640893,
+      "coverage_fraction": 0.09621361687725631,
+      "coverage_percent": 9.621361687725631,
+      "same_pixel_discarded_points": 3373,
+      "same_pixel_farther_than_3cm_discarded_points": 2514,
+      "same_pixel_0_to_3cm_inclusive_discarded_points": 859,
+      "same_pixel_equal_minimum_Z_ties_discarded": 0,
+      "min_valid_camera_Z_m": 0.6912971438671536,
+      "max_valid_camera_Z_m": 1.4179929148475916,
+      "max_depth_png_quantization_error_m": 0.0004999986078786378,
+      "independent_all_candidate_lexicographic_nearest_check": "PASS",
+      "all_winners_reproject_correctly": true,
+      "all_RGB_exact_winner_values": true,
+      "all_PNG_values_dtype_channels_and_CRC_roundtrip": "PASS",
+      "all_NPY_values_dtype_shape_roundtrip": "PASS",
+      "finite_values": true,
+      "files": {
+        "depth": {
+          "path": "depth/003481.png",
+          "bytes": 181003,
+          "sha256": "e7e01b716257ecb9ad20118332d7f4ed6f2b1aa7de6afc0bb2dffbd5297c5158"
+        },
+        "mask": {
+          "path": "masks/003481.png",
+          "bytes": 64941,
+          "sha256": "c7600efcc2c0cf56f87df57c125a95ab6f0cc685227ef8a8b833d74003a9376a"
+        },
+        "RGB": {
+          "path": "images/003481.png",
+          "bytes": 158626,
+          "sha256": "fe03b39b9dcc8aaa4035f4a07d229dffa2df6a95036cb565467e03af2afa1b78"
+        },
+        "depth_float": {
+          "path": "depth_float/003481.npy",
+          "bytes": 2836608,
+          "sha256": "2f5a98cee94765bab729aa8cbd4bbbb6dbb56adf383e8b49c31985785a35c58d"
+        },
+        "winner_source_id": {
+          "path": "winner_source_id/003481.npy",
+          "bytes": 2836608,
+          "sha256": "16975e0a31189f780c2eeee25f5047f8990e31c04fdd9e18c7659c8d4e1cf63c"
+        }
+      },
+      "elapsed_seconds": 0.374798999982886
+    },
+    {
+      "image_id": 3505,
+      "name": "003505.png",
+      "status": "PASS",
+      "source_points": 7004696,
+      "rejected_Z_le_near": 2107310,
+      "rejected_Z_gt_far": 0,
+      "rejected_outside_image_with_valid_Z": 3902767,
+      "projected_points_in_image": 994619,
+      "total_pixels": 709120,
+      "valid_pixels": 393075,
+      "empty_pixels": 316045,
+      "coverage_fraction": 0.5543137973826715,
+      "coverage_percent": 55.43137973826715,
+      "same_pixel_discarded_points": 601544,
+      "same_pixel_farther_than_3cm_discarded_points": 486183,
+      "same_pixel_0_to_3cm_inclusive_discarded_points": 115361,
+      "same_pixel_equal_minimum_Z_ties_discarded": 0,
+      "min_valid_camera_Z_m": 0.6874416825118321,
+      "max_valid_camera_Z_m": 5.586646257003802,
+      "max_depth_png_quantization_error_m": 0.0004999960015834581,
+      "independent_all_candidate_lexicographic_nearest_check": "PASS",
+      "all_winners_reproject_correctly": true,
+      "all_RGB_exact_winner_values": true,
+      "all_PNG_values_dtype_channels_and_CRC_roundtrip": "PASS",
+      "all_NPY_values_dtype_shape_roundtrip": "PASS",
+      "finite_values": true,
+      "files": {
+        "depth": {
+          "path": "depth/003505.png",
+          "bytes": 668936,
+          "sha256": "75043b65f5c979380ab6a13e136bba8dc38bf60ce5fe85e37d1eb741f1d3163c"
+        },
+        "mask": {
+          "path": "masks/003505.png",
+          "bytes": 106123,
+          "sha256": "306ec497fb85d5853f8a190f1e309dea931bb26585f34f10de21d6ff4c5f1229"
+        },
+        "RGB": {
+          "path": "images/003505.png",
+          "bytes": 921097,
+          "sha256": "ba94bb6b4aa36ae11e5e2f74d1fa60fb5f6618ac4d9d7251dd4ef2bb6380ba9a"
+        },
+        "depth_float": {
+          "path": "depth_float/003505.npy",
+          "bytes": 2836608,
+          "sha256": "d78f3ecefa838ff80b617b7691c0f862b0390f9c7619862fda04f9e4e30b319c"
+        },
+        "winner_source_id": {
+          "path": "winner_source_id/003505.npy",
+          "bytes": 2836608,
+          "sha256": "d1ca5bed7aaf19bb7c4175e10b41faed56bc417973b5889e0e2115cafacf127c"
+        }
+      },
+      "elapsed_seconds": 0.7855703999521211
+    },
+    {
+      "image_id": 3520,
+      "name": "003520.png",
+      "status": "PASS",
+      "source_points": 7004696,
+      "rejected_Z_le_near": 5188677,
+      "rejected_Z_gt_far": 0,
+      "rejected_outside_image_with_valid_Z": 1389463,
+      "projected_points_in_image": 426556,
+      "total_pixels": 709120,
+      "valid_pixels": 253796,
+      "empty_pixels": 455324,
+      "coverage_fraction": 0.3579027527075812,
+      "coverage_percent": 35.79027527075812,
+      "same_pixel_discarded_points": 172760,
+      "same_pixel_farther_than_3cm_discarded_points": 114747,
+      "same_pixel_0_to_3cm_inclusive_discarded_points": 58013,
+      "same_pixel_equal_minimum_Z_ties_discarded": 0,
+      "min_valid_camera_Z_m": 0.6948066939119539,
+      "max_valid_camera_Z_m": 3.7370254754506194,
+      "max_depth_png_quantization_error_m": 0.0004999964885581409,
+      "independent_all_candidate_lexicographic_nearest_check": "PASS",
+      "all_winners_reproject_correctly": true,
+      "all_RGB_exact_winner_values": true,
+      "all_PNG_values_dtype_channels_and_CRC_roundtrip": "PASS",
+      "all_NPY_values_dtype_shape_roundtrip": "PASS",
+      "finite_values": true,
+      "files": {
+        "depth": {
+          "path": "depth/003520.png",
+          "bytes": 569368,
+          "sha256": "d116b11c5303681c7c450e0bd6b6958bbcec4f05632fcafdbfd8f62256eb73a6"
+        },
+        "mask": {
+          "path": "masks/003520.png",
+          "bytes": 115422,
+          "sha256": "d71ce562301d5d824b72e15d86fd7b7b2a054043dade5f9d0fa2b5b73b02900a"
+        },
+        "RGB": {
+          "path": "images/003520.png",
+          "bytes": 548358,
+          "sha256": "a81242bd9b639773dca634b9ea5c844eedbc336c773c82ea8d553b1791dc9d79"
+        },
+        "depth_float": {
+          "path": "depth_float/003520.npy",
+          "bytes": 2836608,
+          "sha256": "6633ca68701713441d3844c7e3c2d4bb40064d80405930f7330abcc62c2f61af"
+        },
+        "winner_source_id": {
+          "path": "winner_source_id/003520.npy",
+          "bytes": 2836608,
+          "sha256": "8b00e8bf1764f7f64d1f3df4a48e5050923a09df2893300476c62585eed77f2b"
+        }
+      },
+      "elapsed_seconds": 0.5399821000173688
+    },
+    {
+      "image_id": 3571,
+      "name": "003571.png",
+      "status": "PASS",
+      "source_points": 7004696,
+      "rejected_Z_le_near": 6427044,
+      "rejected_Z_gt_far": 0,
+      "rejected_outside_image_with_valid_Z": 492299,
+      "projected_points_in_image": 85353,
+      "total_pixels": 709120,
+      "valid_pixels": 81375,
+      "empty_pixels": 627745,
+      "coverage_fraction": 0.11475490749097472,
+      "coverage_percent": 11.475490749097473,
+      "same_pixel_discarded_points": 3978,
+      "same_pixel_farther_than_3cm_discarded_points": 3249,
+      "same_pixel_0_to_3cm_inclusive_discarded_points": 729,
+      "same_pixel_equal_minimum_Z_ties_discarded": 0,
+      "min_valid_camera_Z_m": 0.7610377278856519,
+      "max_valid_camera_Z_m": 1.4739790235454133,
+      "max_depth_png_quantization_error_m": 0.000499998190307327,
+      "independent_all_candidate_lexicographic_nearest_check": "PASS",
+      "all_winners_reproject_correctly": true,
+      "all_RGB_exact_winner_values": true,
+      "all_PNG_values_dtype_channels_and_CRC_roundtrip": "PASS",
+      "all_NPY_values_dtype_shape_roundtrip": "PASS",
+      "finite_values": true,
+      "files": {
+        "depth": {
+          "path": "depth/003571.png",
+          "bytes": 210067,
+          "sha256": "080e14d29625ee614e3b72f85a4be86d69aebc9548b7298eb4473bbf2f83e388"
+        },
+        "mask": {
+          "path": "masks/003571.png",
+          "bytes": 71928,
+          "sha256": "046907d0cdbec49a56938c222cfd428f9814a1d1e7d66025da0531c5a0b294a7"
+        },
+        "RGB": {
+          "path": "images/003571.png",
+          "bytes": 176078,
+          "sha256": "a671e0a84f704350ec865518da8014b56b52777b371f41681a651e5dc470d5fb"
+        },
+        "depth_float": {
+          "path": "depth_float/003571.npy",
+          "bytes": 2836608,
+          "sha256": "16c1b2cbafc594958b3e405183d1438614f00dc767a1ab924d2d2313b9bf4533"
+        },
+        "winner_source_id": {
+          "path": "winner_source_id/003571.npy",
+          "bytes": 2836608,
+          "sha256": "bf198e2339bd825a9773c30f54884e3746faf41372cc49314beeccf3d98199d4"
+        }
+      },
+      "elapsed_seconds": 0.3761806999100372
+    },
+    {
+      "image_id": 3583,
+      "name": "003583.png",
+      "status": "PASS",
+      "source_points": 7004696,
+      "rejected_Z_le_near": 1899286,
+      "rejected_Z_gt_far": 0,
+      "rejected_outside_image_with_valid_Z": 3461318,
+      "projected_points_in_image": 1644092,
+      "total_pixels": 709120,
+      "valid_pixels": 395135,
+      "empty_pixels": 313985,
+      "coverage_fraction": 0.5572188064079422,
+      "coverage_percent": 55.721880640794225,
+      "same_pixel_discarded_points": 1248957,
+      "same_pixel_farther_than_3cm_discarded_points": 1010874,
+      "same_pixel_0_to_3cm_inclusive_discarded_points": 238083,
+      "same_pixel_equal_minimum_Z_ties_discarded": 0,
+      "min_valid_camera_Z_m": 0.5037721128860948,
+      "max_valid_camera_Z_m": 7.196567743369743,
+      "max_depth_png_quantization_error_m": 0.0004999962898386556,
+      "independent_all_candidate_lexicographic_nearest_check": "PASS",
+      "all_winners_reproject_correctly": true,
+      "all_RGB_exact_winner_values": true,
+      "all_PNG_values_dtype_channels_and_CRC_roundtrip": "PASS",
+      "all_NPY_values_dtype_shape_roundtrip": "PASS",
+      "finite_values": true,
+      "files": {
+        "depth": {
+          "path": "depth/003583.png",
+          "bytes": 678958,
+          "sha256": "4a440e1a8b2c9aedfe9500af9c4af60a46054defde65216efad4b7d29777a205"
+        },
+        "mask": {
+          "path": "masks/003583.png",
+          "bytes": 103669,
+          "sha256": "e29b784445c87696d484904f78fc888230ba4acdd219f18da9ab1430cfc52fe9"
+        },
+        "RGB": {
+          "path": "images/003583.png",
+          "bytes": 844268,
+          "sha256": "4ef4277e767b2098d5405b8054152d001bf31ecfc152a6bf74d16b9b1c7a18dc"
+        },
+        "depth_float": {
+          "path": "depth_float/003583.npy",
+          "bytes": 2836608,
+          "sha256": "4dceec9f5ae024d506e36e47c414b2b63c9ed1c26bd102337ea793d08f75c9be"
+        },
+        "winner_source_id": {
+          "path": "winner_source_id/003583.npy",
+          "bytes": 2836608,
+          "sha256": "c665c500aa568d3647525b283f5b7cece4e64d651ca6c1832d17fb9ee7884b03"
+        }
+      },
+      "elapsed_seconds": 0.9188465001061559
+    }
+  ],
+  "elapsed_seconds": 6.957552199950442
+}
