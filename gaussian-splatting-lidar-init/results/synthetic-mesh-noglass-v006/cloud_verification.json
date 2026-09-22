@@ -1,0 +1,297 @@
+{
+  "schema": "zs601-mesh-noglass-cloud-verification-v1",
+  "status": "PASS",
+  "scope": "Independent local PLY/provenance/surface/voxel validation; no Gaussian rendering or training result",
+  "units": "metres",
+  "source_scene_sha256": "e27c037aa4b5937d4f2a586638539d22277d9ef689657e93c41a7909962d887a",
+  "original_1cm_source_cloud_sha256": "f7f822cc86ca6af3e376f9cbc902aeff6ae3537724d2c5b7ed8bc5a5da63a8eb",
+  "original_source_scene_matches_frozen_plan": true,
+  "original_cloud_files_match_preexisting_manifest": true,
+  "all_protected_inputs_unchanged_during_verification": true,
+  "protected_input_files": {
+    "3dgsResult/zs601-mesh1cm-scale1-v003/cloud/cloud_manifest.json": {
+      "bytes": 882438,
+      "sha256": "71cc5131b09034074f25c50988deca4a7dc6dbadde772a0294a71267d89cbe15"
+    },
+    "3dgsResult/zs601-mesh1cm-scale1-v003/cloud/color_source_view_id.npy": {
+      "bytes": 28723408,
+      "sha256": "296b2934db66c4f4b492716856867ab93f76e642c3d047e9f82c279ac757e8f9"
+    },
+    "3dgsResult/zs601-mesh1cm-scale1-v003/cloud/mesh_face_id.npy": {
+      "bytes": 28723408,
+      "sha256": "125a15955856539991cb2b3bc0832381fbf815d38bb89ffdb77a7bfdda80a25f"
+    },
+    "3dgsResult/zs601-mesh1cm-scale1-v003/cloud/points_mesh_1cm.ply": {
+      "bytes": 193882443,
+      "sha256": "f7f822cc86ca6af3e376f9cbc902aeff6ae3537724d2c5b7ed8bc5a5da63a8eb"
+    },
+    "3dgsResult/zs601-mesh1cm-scale1-v003/cloud/sampling_report.json": {
+      "bytes": 315406,
+      "sha256": "3b9904c31d222b694db883c0aabd8f5932592dfcec89747a21769a7d0be01f9a"
+    },
+    "scenes/zs601-meetingroom/synthetic-training-v001/source/scene.blend": {
+      "bytes": 12087219,
+      "sha256": "e27c037aa4b5937d4f2a586638539d22277d9ef689657e93c41a7909962d887a"
+    },
+    "scenes/zs601-meetingroom/synthetic-training-v001/source/geometry.npz": {
+      "bytes": 32440492,
+      "sha256": "e3a2384459124e5c431a14c229e6b2a3270ec6586b9d03f4bdbcb14753e606d4"
+    },
+    "scenes/zs601-meetingroom/synthetic-training-v001/plan.json": {
+      "bytes": 3722588,
+      "sha256": "17382d7a4303ca2c32ea6f132d769e99a0c2a1074f0290dcde7a8ea51cd6638c"
+    },
+    "3dgsResult/zs601-mesh-noglass-v006/audit/excluded_clear_glass_faces.npy": {
+      "bytes": 753424,
+      "sha256": "7c6370bb145bd61ef3aeec792c80f11c0cfc65dab895d95bf8e6bad8e31c742d"
+    },
+    "3dgsResult/zs601-mesh-noglass-v006/audit/face_material_id.npy": {
+      "bytes": 3013312,
+      "sha256": "c594de7aa17907c324f1f5cd68c81accfeaee5305bbe2743ddcf160696822400"
+    },
+    "3dgsResult/zs601-mesh-noglass-v006/audit/glass_face_mask.npy": {
+      "bytes": 753424,
+      "sha256": "a90a0b1efc91efbc79659b6236b41cc7a27ce4708214a942cb659eba67ff8620"
+    },
+    "3dgsResult/zs601-mesh-noglass-v006/audit/material_audit.json": {
+      "bytes": 1422322,
+      "sha256": "61ee900c21758dc7d9864e47e2223878460eb2806f382a2f392a60fbf17ac21d"
+    },
+    "3dgsResult/zs601-mesh-noglass-v006/audit/semantic_decision.json": {
+      "bytes": 2005,
+      "sha256": "d825df95fd6919b8fcb9a8ee12015cbcbc1faf0889905ea0418264acac5d61b4"
+    },
+    "3dgsResult/zs601-mesh-noglass-v006/cloud_manifest.json": {
+      "bytes": 5799,
+      "sha256": "fd6b04d4f2468e51f9284811b67196af7207e9fba930e7976ea8e92b88306f39"
+    },
+    "3dgsResult/zs601-mesh-noglass-v006/cloud_1cm/color_source_view_id.npy": {
+      "bytes": 28018912,
+      "sha256": "ca7598d6e03f91601c53169ecae8f5efd90227af840aff36c3c806c2a1d44460"
+    },
+    "3dgsResult/zs601-mesh-noglass-v006/cloud_1cm/mesh_face_id.npy": {
+      "bytes": 28018912,
+      "sha256": "b52615ada1e55ffae56cb76e0367fcba16b1cc9b86aa37b5b8de4d1ae374feb7"
+    },
+    "3dgsResult/zs601-mesh-noglass-v006/cloud_1cm/points_mesh_1cm_noglass.ply": {
+      "bytes": 189127210,
+      "sha256": "68f26fca61b4c1424c1f45f2f4983c4c42cf389abc23d6e0afadd9d48819de5b"
+    },
+    "3dgsResult/zs601-mesh-noglass-v006/cloud_1cm/source_sample_id.npy": {
+      "bytes": 28018912,
+      "sha256": "0cd3f529a6dd75eabe714614d99306466ad565d189e1a112cdb3a67334df1563"
+    },
+    "3dgsResult/zs601-mesh-noglass-v006/cloud_3cm/color_source_view_id.npy": {
+      "bytes": 3190208,
+      "sha256": "26a542b9fc30e0ac9624a18223e5b7697e4aad67bc1e0543ba8e63faf0fae223"
+    },
+    "3dgsResult/zs601-mesh-noglass-v006/cloud_3cm/mesh_face_id.npy": {
+      "bytes": 3190208,
+      "sha256": "55f74f9dae289ba5c733b7a3cb61c59b42f25ffdc1a36a93ba1d0a9ea23f379c"
+    },
+    "3dgsResult/zs601-mesh-noglass-v006/cloud_3cm/points_mesh_3cm_noglass.ply": {
+      "bytes": 21533457,
+      "sha256": "868787e70bfcd7b788efe6cb6d326ee9a8cb5ae20901098091a5c266de107bb4"
+    },
+    "3dgsResult/zs601-mesh-noglass-v006/cloud_3cm/source_sample_id.npy": {
+      "bytes": 3190208,
+      "sha256": "217cd7f37dc2b02f875c117a66846a861b0d92ed806bbd56bca5a171ddd3a1cc"
+    }
+  },
+  "all_output_files_match_export_manifest": true,
+  "export_file_hashes": {
+    "cloud_1cm/color_source_view_id.npy": {
+      "bytes": 28018912,
+      "sha256": "ca7598d6e03f91601c53169ecae8f5efd90227af840aff36c3c806c2a1d44460"
+    },
+    "cloud_1cm/mesh_face_id.npy": {
+      "bytes": 28018912,
+      "sha256": "b52615ada1e55ffae56cb76e0367fcba16b1cc9b86aa37b5b8de4d1ae374feb7"
+    },
+    "cloud_1cm/points_mesh_1cm_noglass.ply": {
+      "bytes": 189127210,
+      "sha256": "68f26fca61b4c1424c1f45f2f4983c4c42cf389abc23d6e0afadd9d48819de5b"
+    },
+    "cloud_1cm/source_sample_id.npy": {
+      "bytes": 28018912,
+      "sha256": "0cd3f529a6dd75eabe714614d99306466ad565d189e1a112cdb3a67334df1563"
+    },
+    "cloud_3cm/color_source_view_id.npy": {
+      "bytes": 3190208,
+      "sha256": "26a542b9fc30e0ac9624a18223e5b7697e4aad67bc1e0543ba8e63faf0fae223"
+    },
+    "cloud_3cm/mesh_face_id.npy": {
+      "bytes": 3190208,
+      "sha256": "55f74f9dae289ba5c733b7a3cb61c59b42f25ffdc1a36a93ba1d0a9ea23f379c"
+    },
+    "cloud_3cm/points_mesh_3cm_noglass.ply": {
+      "bytes": 21533457,
+      "sha256": "868787e70bfcd7b788efe6cb6d326ee9a8cb5ae20901098091a5c266de107bb4"
+    },
+    "cloud_3cm/source_sample_id.npy": {
+      "bytes": 3190208,
+      "sha256": "217cd7f37dc2b02f875c117a66846a861b0d92ed806bbd56bca5a171ddd3a1cc"
+    }
+  },
+  "semantic_exclusion": {
+    "criterion": "material custom_properties.semantic_class == clear_glass",
+    "excluded_materials": [
+      "ZS601_Semantic_CabinetGlass"
+    ],
+    "excluded_components": 33,
+    "excluded_triangles": 3468,
+    "removed_source_points": 176124,
+    "one_cm_exactly_original_cloud_minus_clear_glass": true,
+    "final_face_mask_exactly_matches_semantic_class": true,
+    "retained_material_checks": {
+      "ZS601_LowV36_WhitePolyethylene": {
+        "original_points": 3730,
+        "retained_1cm_points": 3730,
+        "all_preserved": true
+      },
+      "ZS601_Semantic_FrostedOrganizerPlastic": {
+        "original_points": 13427,
+        "retained_1cm_points": 13427,
+        "all_preserved": true
+      },
+      "ZS601_Semantic_WaterControlGlass_V47": {
+        "original_points": 153,
+        "retained_1cm_points": 153,
+        "all_preserved": true
+      },
+      "ZS601_Semantic_TVGlass": {
+        "original_points": 31085,
+        "retained_1cm_points": 31085,
+        "all_preserved": true
+      },
+      "ZS601_UnlitV38_PhosphorGlass": {
+        "original_points": 22984,
+        "retained_1cm_points": 22984,
+        "all_preserved": true
+      }
+    },
+    "broad_transmission_candidate_mask_used_as_final_exclusion": false
+  },
+  "clouds": {
+    "1cm": {
+      "status": "PASS",
+      "points": 7004696,
+      "components": 2055,
+      "ply_readback": "binary_little_endian_float32_XYZ_float32_normals_uint8_RGB",
+      "all_points_checked": true,
+      "finite_XYZ_normals_RGB": true,
+      "valid_uint8_RGB": true,
+      "all_XYZ_RGB_normals_exact_original_source_values": true,
+      "source_sample_face_and_color_view_ids_exact": true,
+      "excluded_clear_glass_points": 0,
+      "max_point_to_source_triangle_distance_m": 3.3173273355863663e-07,
+      "mean_point_to_source_triangle_distance_m": 4.591604206611227e-08,
+      "distance_tolerance_m": 2e-06,
+      "max_normal_component_error": 2.9802294077008185e-08,
+      "max_normal_unit_length_error": 4.9233187082720065e-08,
+      "projections_outside_triangle_count_checked_by_segments": 13,
+      "voxel_size_m": 0.01,
+      "unique_occupied_voxels_per_component": 7004696,
+      "one_representative_per_component_voxel": true,
+      "minimum_pairwise_spacing_guaranteed": false,
+      "bounds_m": [
+        [
+          -3.388430118560791,
+          -6.757371425628662,
+          -1.066464900970459
+        ],
+        [
+          4.223943710327148,
+          2.270010471343994,
+          1.5888017416000366
+        ]
+      ],
+      "train_view_ids_allowed": 2418,
+      "all_color_views_train_or_minus_one": true,
+      "unique_train_views_actually_used": 2412,
+      "projected_points": 2605190,
+      "material_fallback_points": 4399506
+    },
+    "3cm": {
+      "status": "PASS",
+      "points": 797520,
+      "components": 2055,
+      "ply_readback": "binary_little_endian_float32_XYZ_float32_normals_uint8_RGB",
+      "all_points_checked": true,
+      "finite_XYZ_normals_RGB": true,
+      "valid_uint8_RGB": true,
+      "all_XYZ_RGB_normals_exact_original_source_values": true,
+      "source_sample_face_and_color_view_ids_exact": true,
+      "excluded_clear_glass_points": 0,
+      "max_point_to_source_triangle_distance_m": 3.3173273355863663e-07,
+      "mean_point_to_source_triangle_distance_m": 4.5662609209759306e-08,
+      "distance_tolerance_m": 2e-06,
+      "max_normal_component_error": 2.9802080470098247e-08,
+      "max_normal_unit_length_error": 4.553122423534006e-08,
+      "projections_outside_triangle_count_checked_by_segments": 2,
+      "voxel_size_m": 0.03,
+      "unique_occupied_voxels_per_component": 797520,
+      "one_representative_per_component_voxel": true,
+      "minimum_pairwise_spacing_guaranteed": false,
+      "bounds_m": [
+        [
+          -3.387341022491455,
+          -6.757371425628662,
+          -1.0662709474563599
+        ],
+        [
+          4.2236528396606445,
+          2.270000696182251,
+          1.5887126922607422
+        ]
+      ],
+      "train_view_ids_allowed": 2418,
+      "all_color_views_train_or_minus_one": true,
+      "unique_train_views_actually_used": 2389,
+      "projected_points": 306179,
+      "material_fallback_points": 491341
+    }
+  },
+  "three_cm_exact_subset_of_one_cm": true,
+  "three_cm_covers_all_one_cm_occupied_three_cm_voxels_per_component": true,
+  "minimum_pairwise_spacing_guaranteed": false,
+  "spacing_note": "1cm/3cm are world-axis voxel resolutions per component. Representatives in adjacent cells or different components may be closer than that resolution; this is not a strict minimum-distance or Poisson-disk guarantee.",
+  "knn_reference": {
+    "sampled_points": 20000,
+    "seed": 601006,
+    "query": "scipy.spatial.cKDTree exact Euclidean query, eps=0, k=4 including one self-distance",
+    "knn_k_excluding_self": 3,
+    "rms_definition": "sqrt(mean(squared distances to 3 nearest other points))",
+    "nearest_neighbor_m": {
+      "min": 0.00010916599869081482,
+      "median": 0.006908860927430219,
+      "p95": 0.009677797310351958
+    },
+    "rms_distance_m": {
+      "min": 0.002241663369532445,
+      "median": 0.00882798878903614,
+      "p95": 0.010793046827288641,
+      "max": 0.013839489352469364
+    },
+    "render_scale_multiplier": 0.5,
+    "expected_sigma_scale05_m": {
+      "min": 0.0011208316847662225,
+      "median": 0.00441399439451807,
+      "p95": 0.0053965234136443205,
+      "max": 0.006919744676234682
+    },
+    "reference_path": "experiments/2026-09-22/synthetic-mesh-noglass-v006/knn_reference.npz",
+    "reference_keys": [
+      "point_indices",
+      "rms_distance_m"
+    ],
+    "reference_sha256": "ebddd710f080d9fc0233cdd20efb6cada172c78bde4fc71ad7e28cfddb3e0639"
+  },
+  "limitations": [
+    "The frozen Blender material audit is read as input; this verifier does not reopen Blender.",
+    "Train-only view IDs and exact preservation of prior RGB are checked; per-point color visibility is inherited from the original cloud process, not recomputed here.",
+    "Unobserved opaque surfaces retain original material fallback colors; removing clear glass does not bake missing textures, reflections, or illumination.",
+    "Semantic image masks were not added and Gaussian rendering/training is outside this report."
+  ],
+  "elapsed_seconds": 11.9056512999814
+}

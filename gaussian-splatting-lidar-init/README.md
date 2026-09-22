@@ -144,3 +144,14 @@ Output directories must not already exist. Failure artifacts are retained.
 `COMPLETE.json` means parameter/render/package checks passed, **not trained quality**.
 Per-view PSNR/SSIM and depth errors compare initialization renders to fixed Blender
 GT after rendering. They measure this synthetic scene and are not real-world accuracy.
+
+
+## Known-glass exclusion v006
+
+[Verified no-glass experiment](results/synthetic-mesh-noglass-v006/README.md):
+33 clear-glass mesh parts excluded using Blender material semantic labels;
+a 1 cm cloud with 7,004,696 points for 200 virtual renders and a 3 cm cloud
+with 797,520 points for future formal initialization. Same camera poses,
+k=3, scale=0.5, and original coverage
+masks; no semantic image masks or training. Opaque-surface color fallback
+limitations remain. See the actual executed notebook and per-view metrics.

@@ -1,0 +1,54 @@
+{
+  "criterion": "Explicit material semantic_class=clear_glass, verified constant Principled Transmission Weight=1",
+  "excluded_materials": [
+    "ZS601_Semantic_CabinetGlass"
+  ],
+  "excluded_parts": [
+    "ZS601_CabinetV39_Glass_00_-1",
+    "ZS601_CabinetV39_Glass_00_1",
+    "ZS601_CabinetV39_Glass_01_-1",
+    "ZS601_CabinetV39_Glass_01_1",
+    "ZS601_CabinetV39_Glass_02_-1",
+    "ZS601_CabinetV39_Glass_02_1",
+    "ZS601_CabinetV39_Glass_03_-1",
+    "ZS601_CabinetV39_Glass_03_1",
+    "ZS601_CabinetV39_Glass_04_-1",
+    "ZS601_CabinetV39_Glass_04_1",
+    "ZS601_CabinetV39_Glass_05_-1",
+    "ZS601_CabinetV39_Glass_05_1",
+    "ZS601_CabinetV39_Glass_06_-1",
+    "ZS601_CabinetV39_Glass_06_1",
+    "ZS601_CabinetV39_Glass_07_-1",
+    "ZS601_CabinetV39_Glass_07_1",
+    "ZS601_CaseV3_GlassShelf_0_0",
+    "ZS601_CaseV3_GlassShelf_0_1",
+    "ZS601_CaseV3_GlassShelf_1_0",
+    "ZS601_CaseV3_GlassShelf_1_1",
+    "ZS601_CaseV3_GlassShelf_2_0",
+    "ZS601_CaseV3_GlassShelf_2_1",
+    "ZS601_CaseV3_GlassShelf_3_0",
+    "ZS601_CaseV3_GlassShelf_3_1",
+    "ZS601_CaseV3_GlassShelf_4_0",
+    "ZS601_CaseV3_GlassShelf_4_1",
+    "ZS601_CaseV3_GlassShelf_5_0",
+    "ZS601_CaseV3_GlassShelf_5_1",
+    "ZS601_CaseV3_GlassShelf_6_0",
+    "ZS601_CaseV3_GlassShelf_6_1",
+    "ZS601_CaseV3_GlassShelf_7_0",
+    "ZS601_CaseV3_GlassShelf_7_1",
+    "ZS601_DoorV50_WindowGlass"
+  ],
+  "excluded_triangles": 3468,
+  "excluded_source_points": 176124,
+  "retained_transmissive_plastics": [
+    "ZS601_LowV36_WhitePolyethylene",
+    "ZS601_Semantic_FrostedOrganizerPlastic"
+  ],
+  "retained_opaque_glass_named_materials": [
+    "ZS601_Semantic_WaterControlGlass_V47",
+    "ZS601_Semantic_TVGlass",
+    "ZS601_UnlitV38_PhosphorGlass"
+  ],
+  "preliminary_audit_note": "material_audit.json glass flag and glass_face_mask.npy denote broad transmission candidates; only excluded_clear_glass_faces.npy is the approved final selection.",
+  "semantic_image_masks_added": false
+}
