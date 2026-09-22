@@ -219,7 +219,8 @@ int CudaRasterizer::Rasterizer::forward(
 	float* depth,
 	bool antialiasing,
 	int* radii,
-	bool debug)
+	bool debug,
+	int depth_mode)
 {
 	const float focal_y = height / (2.0f * tan_fovy);
 	const float focal_x = width / (2.0f * tan_fovx);
@@ -335,7 +336,9 @@ int CudaRasterizer::Rasterizer::forward(
 		background,
 		out_color,
 		geomState.depths,
-		depth), debug)
+		depth, depth_mode, means3D,
+		cov3D_precomp ? cov3D_precomp : geomState.cov3D,
+		viewmatrix, cam_pos, focal_x, focal_y), debug)
 
 	return num_rendered;
 }

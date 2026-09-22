@@ -1,0 +1,472 @@
+{
+  "status": "PASS_FILES_TEXT_EXTENTS_AND_VISUAL_REVIEW",
+  "PNG_figures": 103,
+  "representative_PDF_exports": 3,
+  "all_PNGs_decoded_successfully": true,
+  "all_103_figure_text_extents_checked": true,
+  "visual_review": {
+    "status": "PASS_VISUAL_INSPECTION",
+    "reviewer": "Codex independent evaluation agent using image inspection",
+    "representative_views": [
+      3202,
+      3376,
+      3481
+    ],
+    "reviewed_representative_figures": [
+      "representative_views/view_003202_five_methods.png",
+      "representative_views/view_003376_five_methods.png",
+      "representative_views/view_003481_five_methods.png"
+    ],
+    "reviewed_standalone_formats": [
+      "nn_heatmaps/003481_method_e_first_peak_s01.png",
+      "signed_mesh_Z/003202_method_a_gaussian.png"
+    ],
+    "viewing_method": "Full PNGs decoded with Pillow, then lossless resized previews displayed for two representative views; a JPEG inspection preview was used for view3481 because the image-display tool rejected the large PNG payload. Original scientific PNG/PDF files were unchanged.",
+    "checks": {
+      "main_titles_and_method_titles_readable_and_uncropped": true,
+      "five_columns_ordered_A_B_C_D_E": true,
+      "three_rows_RGB_NN_signed_mesh_Z": true,
+      "shared_NN_0_to_30mm_colourbar": true,
+      "shared_signed_Z_minus150_to_plus150mm_colourbar": true,
+      "signed_error_direction_explicit": true,
+      "invalid_colour_and_NN_limitation_label_present": true,
+      "colourbars_and_row_labels_visible": true,
+      "standalone_legends_and_footnotes_uncropped": true
+    },
+    "observations": [
+      "B is sparse and its mesh Z error is often positive even where NN is small.",
+      "C/D show broader negative Z bands and larger source NN errors than A, consistent with the numeric front-surface bias.",
+      "E shows smaller source NN distances but visibly grainy RGB and positive Z errors in several wall/ceiling regions.",
+      "Visual format checks do not certify physical first-hit ordering or geometry quality. Numeric errors and qmin diagnostics remain authoritative."
+    ],
+    "all_100_standalone_images_individually_inspected": false,
+    "automatic_text_extent_and_PNG_decode_checks_cover_all_103_figures": true
+  },
+  "files": {
+    "figures/nn_heatmaps/003202_method_a_gaussian.png": {
+      "bytes": 1441272,
+      "sha256": "14fc9bb69978f96a381b04fd1b30e9bc645f05ebbfbbce1acf2193803671fd7e"
+    },
+    "figures/signed_mesh_Z/003202_method_a_gaussian.png": {
+      "bytes": 660930,
+      "sha256": "643e508c4f933ade0fe67b445cd54b7f5a0484e9b8779ddc133a437276f24dc0"
+    },
+    "figures/nn_heatmaps/003202_method_b_zbuffer.png": {
+      "bytes": 1037089,
+      "sha256": "1ba8b07a5905e811a8ccea653afcfc2425afcd704cd2aefc4b6795b11723391a"
+    },
+    "figures/signed_mesh_Z/003202_method_b_zbuffer.png": {
+      "bytes": 837281,
+      "sha256": "280aa39358aaf32d541f7f5c4b1190f5dfcfdaca32c977a8d48c0dcb691f811d"
+    },
+    "figures/nn_heatmaps/003202_method_c_first_center_s05.png": {
+      "bytes": 1443456,
+      "sha256": "0cd314b6c837d619d158063dd8f270e195d49951a7223cbf94dbe86b842aa569"
+    },
+    "figures/signed_mesh_Z/003202_method_c_first_center_s05.png": {
+      "bytes": 648130,
+      "sha256": "13d45ee57c98898260cf414d00448112e21c840e96924c5a4e27e455686e3e28"
+    },
+    "figures/nn_heatmaps/003202_method_d_first_peak_s05.png": {
+      "bytes": 1434551,
+      "sha256": "e6b42bc3b3ce2b144b9630f9e94c2c1ff86ab547fc3b0fd02df16aede853582b"
+    },
+    "figures/signed_mesh_Z/003202_method_d_first_peak_s05.png": {
+      "bytes": 725624,
+      "sha256": "85cb1106fcbcbe3d1df5cd46d789cd48e926ae4375b71028ae6c29ac0682aa32"
+    },
+    "figures/nn_heatmaps/003202_method_e_first_peak_s01.png": {
+      "bytes": 1450848,
+      "sha256": "c67b3ebb7d56d4655a778c7de8366e5d9dd4c47c87a9d46b6a134ae554c41bfa"
+    },
+    "figures/signed_mesh_Z/003202_method_e_first_peak_s01.png": {
+      "bytes": 859565,
+      "sha256": "a43af9000b32f0387269222f173fdae55f3ddd5242e3c71912caf856412c49ab"
+    },
+    "figures/nn_heatmaps/003340_method_a_gaussian.png": {
+      "bytes": 1580565,
+      "sha256": "ef15bd3ea5bfbbb6c18c96ccd6e5e84a9f505e20b5ed3e381cec927ec79e2845"
+    },
+    "figures/signed_mesh_Z/003340_method_a_gaussian.png": {
+      "bytes": 733738,
+      "sha256": "901a0ebc258560289a768ba8214218fdea79b5987042ea7042c9a47dd7e8931f"
+    },
+    "figures/nn_heatmaps/003340_method_b_zbuffer.png": {
+      "bytes": 846108,
+      "sha256": "a09d76508cf7b941f681fc14432deb785d30392b02eb2b5d147481c70c248dea"
+    },
+    "figures/signed_mesh_Z/003340_method_b_zbuffer.png": {
+      "bytes": 814925,
+      "sha256": "084c3185acf5eb3e687af6572a6e8565e588bfb386ff1132911b2fe5d0515d83"
+    },
+    "figures/nn_heatmaps/003340_method_c_first_center_s05.png": {
+      "bytes": 1450837,
+      "sha256": "3514f68f34d07b390178a85d5c8bf34212cf13a3356506c77b5e579fe2bd8cad"
+    },
+    "figures/signed_mesh_Z/003340_method_c_first_center_s05.png": {
+      "bytes": 602197,
+      "sha256": "abcd9c8e7061d5f46d258a3cbd0ffeb85b8c96caa2e81c93dd6403780b4e0de9"
+    },
+    "figures/nn_heatmaps/003340_method_d_first_peak_s05.png": {
+      "bytes": 1429280,
+      "sha256": "a402ea0dc11c6db2f18a555c190519b2d6c1ac8c9f24971ee677b0b8bdf31c79"
+    },
+    "figures/signed_mesh_Z/003340_method_d_first_peak_s05.png": {
+      "bytes": 724777,
+      "sha256": "3135e44382757eb648506a26f801ac69309c76e6f89774e4c19b59ec58823867"
+    },
+    "figures/nn_heatmaps/003340_method_e_first_peak_s01.png": {
+      "bytes": 1543014,
+      "sha256": "bf537e3943199d97d58f96ee2d10e483e2b1442359eebd7784d1790e0a734059"
+    },
+    "figures/signed_mesh_Z/003340_method_e_first_peak_s01.png": {
+      "bytes": 828892,
+      "sha256": "cb473583058821554c7bced18b327c33a83e09a1eaeab017d7b0b1bfe0e8b8b8"
+    },
+    "figures/nn_heatmaps/003376_method_a_gaussian.png": {
+      "bytes": 1530069,
+      "sha256": "709fc1dd682d555ed09e815aa92c64540aa6938d1513c48941a9e94aada29f6c"
+    },
+    "figures/signed_mesh_Z/003376_method_a_gaussian.png": {
+      "bytes": 709509,
+      "sha256": "a24104a902e9c6e4f49d23ad1a491cbb075269bfa5decd3fef4c35b07ed4d4a7"
+    },
+    "figures/nn_heatmaps/003376_method_b_zbuffer.png": {
+      "bytes": 853177,
+      "sha256": "35c17bea10f5bc38ac3741d164272b8cf7bc4aa074267b32e97d86fdfb7e8248"
+    },
+    "figures/signed_mesh_Z/003376_method_b_zbuffer.png": {
+      "bytes": 858742,
+      "sha256": "bb77718769876f24849120f82aa29e8f7f32241d43336ffe072036d129a03b4a"
+    },
+    "figures/nn_heatmaps/003376_method_c_first_center_s05.png": {
+      "bytes": 1415546,
+      "sha256": "15a2b14967ada488e155d9f0f2d9de7eaf2a17b05d92aa734025b478e2a557e0"
+    },
+    "figures/signed_mesh_Z/003376_method_c_first_center_s05.png": {
+      "bytes": 630767,
+      "sha256": "a40a0a18dcb957c1cb480f99a7bcebeddb94be59c31ba34e667d5acb6637c9f3"
+    },
+    "figures/nn_heatmaps/003376_method_d_first_peak_s05.png": {
+      "bytes": 1417661,
+      "sha256": "00d1a008d11e206d09d9d5436e623d2b5614de015dd98e58ac71276a324af45d"
+    },
+    "figures/signed_mesh_Z/003376_method_d_first_peak_s05.png": {
+      "bytes": 739200,
+      "sha256": "6e356158c27eced1d89297069ab42f66a03a4ba4b9c973efcdc7c000654b811a"
+    },
+    "figures/nn_heatmaps/003376_method_e_first_peak_s01.png": {
+      "bytes": 1526022,
+      "sha256": "5d355e32e9ccd129d371ce573123a724c6f2913c9ca9f1ae594706412f4e7aa8"
+    },
+    "figures/signed_mesh_Z/003376_method_e_first_peak_s01.png": {
+      "bytes": 867250,
+      "sha256": "fc9da816cdcb8abfb74f3314661bcbce7b49370ceaacb9ed320a56a95df9c654"
+    },
+    "figures/nn_heatmaps/003388_method_a_gaussian.png": {
+      "bytes": 1528139,
+      "sha256": "3651e7aa90f4a76c1f51df791952fe19abe4d207312b8ad2ece5182582698ba8"
+    },
+    "figures/signed_mesh_Z/003388_method_a_gaussian.png": {
+      "bytes": 689564,
+      "sha256": "6ab992e8f45fb46f2252ffbfc6180d8c755dba3a2e9daf9b7b50e88824f04f07"
+    },
+    "figures/nn_heatmaps/003388_method_b_zbuffer.png": {
+      "bytes": 777405,
+      "sha256": "e871396e337530b9bc5341261fa7f17c002e93f924017fc6fafbf6210f53cb04"
+    },
+    "figures/signed_mesh_Z/003388_method_b_zbuffer.png": {
+      "bytes": 796571,
+      "sha256": "2feb56a1378694e3060381239f4436cdcaad81f349f09f67334a20185001e250"
+    },
+    "figures/nn_heatmaps/003388_method_c_first_center_s05.png": {
+      "bytes": 1332927,
+      "sha256": "9bd47ca8e51997a96d55d7f8552d14f54afefca86b9abb554984366b15ca7991"
+    },
+    "figures/signed_mesh_Z/003388_method_c_first_center_s05.png": {
+      "bytes": 617103,
+      "sha256": "1a20953190330542ca71d70c40f84816b97b9fbe3e87b82688cdf93b0c4cdbff"
+    },
+    "figures/nn_heatmaps/003388_method_d_first_peak_s05.png": {
+      "bytes": 1408084,
+      "sha256": "9d174693a247bce03f3980b0fa79269ab0c8c73fb2510e2125aee49128e7ea96"
+    },
+    "figures/signed_mesh_Z/003388_method_d_first_peak_s05.png": {
+      "bytes": 717845,
+      "sha256": "e7e17cc1cddd0e707f0569656c0d6dcc5d384d487fed66784d56b63e01fe70c3"
+    },
+    "figures/nn_heatmaps/003388_method_e_first_peak_s01.png": {
+      "bytes": 1501615,
+      "sha256": "b58aa9e16827f8876ece7cf3536a551d38525e8c37712b3f3d3da6b12aa0d30a"
+    },
+    "figures/signed_mesh_Z/003388_method_e_first_peak_s01.png": {
+      "bytes": 884848,
+      "sha256": "b9fa9ca0b6ead3c20a0c78e8988a54400975562d7cf342b301ec7b4f83a4f256"
+    },
+    "figures/nn_heatmaps/003409_method_a_gaussian.png": {
+      "bytes": 1568910,
+      "sha256": "1131e928bc1e883be548792ddf2bc66a59f4b0383889655dc53cb574c07dd6e3"
+    },
+    "figures/signed_mesh_Z/003409_method_a_gaussian.png": {
+      "bytes": 611273,
+      "sha256": "9690ff0ef281b15253171d0d13b87e50499608cdc85659015ec1a68d007458e7"
+    },
+    "figures/nn_heatmaps/003409_method_b_zbuffer.png": {
+      "bytes": 468221,
+      "sha256": "4771d843ad0393914591fe9d503bee70080a03dae90cd14fc3547e8aeab31dc5"
+    },
+    "figures/signed_mesh_Z/003409_method_b_zbuffer.png": {
+      "bytes": 460607,
+      "sha256": "e775300da4dc20836a4a36842b1443904bed2738bb949ab8eca98e37b265a317"
+    },
+    "figures/nn_heatmaps/003409_method_c_first_center_s05.png": {
+      "bytes": 1339049,
+      "sha256": "029367d39bed05348605c74f49e4bc4ae795a3c85e2f0f764c94e0f93f0854d3"
+    },
+    "figures/signed_mesh_Z/003409_method_c_first_center_s05.png": {
+      "bytes": 264826,
+      "sha256": "0b73ff1019f53b652eaded529fbc9d67fd904a5136b3bf0c8b69b6d1fcb1ea31"
+    },
+    "figures/nn_heatmaps/003409_method_d_first_peak_s05.png": {
+      "bytes": 1386418,
+      "sha256": "bd2d12a3423d849526cab50a10ffe654b8aafe33e1d0b87d3fec279f2436521b"
+    },
+    "figures/signed_mesh_Z/003409_method_d_first_peak_s05.png": {
+      "bytes": 574268,
+      "sha256": "7c6c12ab2312ff5cabc4c2e9bfdea5dbb34848e11c01125322337fae2d0a46a0"
+    },
+    "figures/nn_heatmaps/003409_method_e_first_peak_s01.png": {
+      "bytes": 1398300,
+      "sha256": "7ee2145b5b2a7b16cd829c8192d18dd8209cc6942d648a382386afedeedafee2"
+    },
+    "figures/signed_mesh_Z/003409_method_e_first_peak_s01.png": {
+      "bytes": 745585,
+      "sha256": "620b4bf019e1e8eb1cb3fae54dae96018acca3dae4c44086f5c0d980e4bc76fe"
+    },
+    "figures/nn_heatmaps/003481_method_a_gaussian.png": {
+      "bytes": 1623949,
+      "sha256": "22c51979555555972eca39b348d136cc48eddedfbe5146dacddcf40a2dbfa5f7"
+    },
+    "figures/signed_mesh_Z/003481_method_a_gaussian.png": {
+      "bytes": 690862,
+      "sha256": "349106d2f71c793452c3e21d1b633a82162a7326642326d2074870e6fc281854"
+    },
+    "figures/nn_heatmaps/003481_method_b_zbuffer.png": {
+      "bytes": 288266,
+      "sha256": "7224ba944c58ac006be57f573d5531195435cb2d4744bd0143ce09da551ac234"
+    },
+    "figures/signed_mesh_Z/003481_method_b_zbuffer.png": {
+      "bytes": 315720,
+      "sha256": "4d5f344498b4b40f43ca7943764f3ade9cf295b7501743c9d0cc2c8466d9fee7"
+    },
+    "figures/nn_heatmaps/003481_method_c_first_center_s05.png": {
+      "bytes": 1236645,
+      "sha256": "60e84269901702a1771c1fd985382c8a63eab527cd03c38ade2dbd8afdc22513"
+    },
+    "figures/signed_mesh_Z/003481_method_c_first_center_s05.png": {
+      "bytes": 293402,
+      "sha256": "bc4c2fd642dbf42fa081b07a44d0297921afe4943dc2a0b09e80c71f0cfe104a"
+    },
+    "figures/nn_heatmaps/003481_method_d_first_peak_s05.png": {
+      "bytes": 1348578,
+      "sha256": "b5f40991c51c27cdce5b4a25b3ccd148191803b08201e66e419c0d0dd007633f"
+    },
+    "figures/signed_mesh_Z/003481_method_d_first_peak_s05.png": {
+      "bytes": 553969,
+      "sha256": "83dfee62d09550af4fbb0dc03e5fc4969002147b2504c3fbbc62f80b6421d111"
+    },
+    "figures/nn_heatmaps/003481_method_e_first_peak_s01.png": {
+      "bytes": 1298030,
+      "sha256": "1f8406c49dc8b32042152147974f28d748923e974aaeccadc0cad98102726960"
+    },
+    "figures/signed_mesh_Z/003481_method_e_first_peak_s01.png": {
+      "bytes": 808568,
+      "sha256": "572946425df9057d52d899e8f9a92faf28009f83f0632be4340d9975f2ee6919"
+    },
+    "figures/nn_heatmaps/003505_method_a_gaussian.png": {
+      "bytes": 1519814,
+      "sha256": "9f93213060001b8c7453dd5bb233dcea81d0e0438fc5a69dfa7b28e048b584eb"
+    },
+    "figures/signed_mesh_Z/003505_method_a_gaussian.png": {
+      "bytes": 693046,
+      "sha256": "6adc5b01b9515919052826c025b4fed3778786336d68582d384721f89003447d"
+    },
+    "figures/nn_heatmaps/003505_method_b_zbuffer.png": {
+      "bytes": 954278,
+      "sha256": "972a731406707987378d061ca1b965501a0f3a1773d19917ff04515d0189d159"
+    },
+    "figures/signed_mesh_Z/003505_method_b_zbuffer.png": {
+      "bytes": 902519,
+      "sha256": "7e098d0c5e0f484accb5069f7d16ec490f0cb11ee63bb734953cc534a269d8bf"
+    },
+    "figures/nn_heatmaps/003505_method_c_first_center_s05.png": {
+      "bytes": 1427848,
+      "sha256": "8e584a003925ab759d537fca85d006be6bce8cd2709de6eaa9ca369cf59bfd4a"
+    },
+    "figures/signed_mesh_Z/003505_method_c_first_center_s05.png": {
+      "bytes": 670032,
+      "sha256": "d7aec978951a675722bfcac33ddcaae3d0899494b19d7960a3c43fa79bf26352"
+    },
+    "figures/nn_heatmaps/003505_method_d_first_peak_s05.png": {
+      "bytes": 1440080,
+      "sha256": "a1ed1fb7c4a2ecb11e760bd9affc711fdb69101f593f67278cc8feada4a4acbf"
+    },
+    "figures/signed_mesh_Z/003505_method_d_first_peak_s05.png": {
+      "bytes": 742270,
+      "sha256": "63526846a71995ae1682211b7b2db0fe6cde704482bad5f3dbd7281999796134"
+    },
+    "figures/nn_heatmaps/003505_method_e_first_peak_s01.png": {
+      "bytes": 1517930,
+      "sha256": "ac434f779c92bbdb3fd537b6c0d455837bc0362230dff7a7fc9a8d457c2169ed"
+    },
+    "figures/signed_mesh_Z/003505_method_e_first_peak_s01.png": {
+      "bytes": 843705,
+      "sha256": "e4c851e70ecf26f270515c1f58925f9055d93b9bb4e192a2ec4998d303c2ba9f"
+    },
+    "figures/nn_heatmaps/003520_method_a_gaussian.png": {
+      "bytes": 1513911,
+      "sha256": "612bc7505bda4f5347e6f3b01d4801a10cac6a2c878e1e7cb138fa2030f5508b"
+    },
+    "figures/signed_mesh_Z/003520_method_a_gaussian.png": {
+      "bytes": 690238,
+      "sha256": "64a756b093b6c98caa265e5c7748f21d5c122dae916c42e74bb2ecb45920a89a"
+    },
+    "figures/nn_heatmaps/003520_method_b_zbuffer.png": {
+      "bytes": 711528,
+      "sha256": "60e8890d49174e2b3dfc7267a6e89bcbcf19d947e5bf77a7be7881184f9ec489"
+    },
+    "figures/signed_mesh_Z/003520_method_b_zbuffer.png": {
+      "bytes": 721430,
+      "sha256": "235aee2e1483a16035a67e7e88ff46fbbf9b6ee7d7fc9feadd6a4e674f570eac"
+    },
+    "figures/nn_heatmaps/003520_method_c_first_center_s05.png": {
+      "bytes": 1353717,
+      "sha256": "5207f02ebde756d2cc73ba1673e0917d95a66ecd79b52c06c7c8b3d1a8ce43cf"
+    },
+    "figures/signed_mesh_Z/003520_method_c_first_center_s05.png": {
+      "bytes": 588732,
+      "sha256": "9f0f44ac487c273e4a8d29b06800791811cb63aceb349bd0f89ab8466d771c4e"
+    },
+    "figures/nn_heatmaps/003520_method_d_first_peak_s05.png": {
+      "bytes": 1379286,
+      "sha256": "0d5967ea5c9797c51af37a3f8902d52080dd34c7dcc87e62039986ebf6227cb9"
+    },
+    "figures/signed_mesh_Z/003520_method_d_first_peak_s05.png": {
+      "bytes": 723889,
+      "sha256": "eabd2df074f406a330f11e779552e496a61ed22a187978655bcb9c33429a0a3c"
+    },
+    "figures/nn_heatmaps/003520_method_e_first_peak_s01.png": {
+      "bytes": 1514400,
+      "sha256": "913d1c39a1f1fd780af3324275cd61e46878c0b4780050cb22c2d9ac73b85333"
+    },
+    "figures/signed_mesh_Z/003520_method_e_first_peak_s01.png": {
+      "bytes": 912489,
+      "sha256": "3f619d7ac0030a1f2546e937e6f2a03b30c7778e8e310b899c11248888797f85"
+    },
+    "figures/nn_heatmaps/003571_method_a_gaussian.png": {
+      "bytes": 1565150,
+      "sha256": "59936d85d3ee8c7a6558effac56d466f7eb2b3af7177060c2cb0e4596b8c1151"
+    },
+    "figures/signed_mesh_Z/003571_method_a_gaussian.png": {
+      "bytes": 641847,
+      "sha256": "ec14fa4cfdecb84634459c81503b93c751309c882dd4c8ed7fcf30520f845b1f"
+    },
+    "figures/nn_heatmaps/003571_method_b_zbuffer.png": {
+      "bytes": 317630,
+      "sha256": "275e1a514c6c10f553928ff1f49acb56fe2a664d02a35f35392a6e611383b23a"
+    },
+    "figures/signed_mesh_Z/003571_method_b_zbuffer.png": {
+      "bytes": 357382,
+      "sha256": "50e753d389472d09caae91c1731394dffb8fbec078b38d69e6af41ef0b23c3e1"
+    },
+    "figures/nn_heatmaps/003571_method_c_first_center_s05.png": {
+      "bytes": 1261729,
+      "sha256": "7a64b88f1a685a401e151678e74d3bda90101fdab93474bd27d40bc1ba3a22b6"
+    },
+    "figures/signed_mesh_Z/003571_method_c_first_center_s05.png": {
+      "bytes": 330017,
+      "sha256": "c068cc11c5d6b9271ed3d7ae48e3a5debe051f6620a8450539e0e83a18dbf7ef"
+    },
+    "figures/nn_heatmaps/003571_method_d_first_peak_s05.png": {
+      "bytes": 1385659,
+      "sha256": "9eae1693d02e99463b92c743aaa27737f161907fdf5c13b5d2ff9876c1e24dea"
+    },
+    "figures/signed_mesh_Z/003571_method_d_first_peak_s05.png": {
+      "bytes": 575727,
+      "sha256": "44a6e7bd7d3bc99b42425352088660b45f941db9562866aa2f4b887ff1163ea7"
+    },
+    "figures/nn_heatmaps/003571_method_e_first_peak_s01.png": {
+      "bytes": 1345261,
+      "sha256": "6ebf5b4b241e062876384ce553c14d2a5bc6d81357e4a5afbf162180e9fa4608"
+    },
+    "figures/signed_mesh_Z/003571_method_e_first_peak_s01.png": {
+      "bytes": 863262,
+      "sha256": "8762121453bd8805516bb0d66f9f6b3c9689a44bcd1ef06c85c1ff01028ec503"
+    },
+    "figures/nn_heatmaps/003583_method_a_gaussian.png": {
+      "bytes": 1517950,
+      "sha256": "87c886c395fe04dea09b9bc403bed8e183ba7766bcbdcbae0419118f9719e350"
+    },
+    "figures/signed_mesh_Z/003583_method_a_gaussian.png": {
+      "bytes": 746872,
+      "sha256": "afb6bf2008b351e0c6a83a762383653449fbffef3b733f8711f69532e756d468"
+    },
+    "figures/nn_heatmaps/003583_method_b_zbuffer.png": {
+      "bytes": 968517,
+      "sha256": "3ce10bc71e3f5765e8629d578c2f1191069b63e084df131ff7119c8d249e3f85"
+    },
+    "figures/signed_mesh_Z/003583_method_b_zbuffer.png": {
+      "bytes": 920053,
+      "sha256": "b70ca516b6705ce3a8127d40e1b25fb88af104a485464852aa304bf00f477173"
+    },
+    "figures/nn_heatmaps/003583_method_c_first_center_s05.png": {
+      "bytes": 1505717,
+      "sha256": "6f3381b5d767a672a6888584905593ba3c81da43c8abafcf8b81b734fadbfe2a"
+    },
+    "figures/signed_mesh_Z/003583_method_c_first_center_s05.png": {
+      "bytes": 703850,
+      "sha256": "d39f251918162e4c54e83efb7428bfedcaaa86f526196884f34364585a1944f9"
+    },
+    "figures/nn_heatmaps/003583_method_d_first_peak_s05.png": {
+      "bytes": 1459005,
+      "sha256": "241e923c8d4c8a6b9de022d7923659e4ab2674550ad62a392ddf397e5bb1d651"
+    },
+    "figures/signed_mesh_Z/003583_method_d_first_peak_s05.png": {
+      "bytes": 797517,
+      "sha256": "d8b9e86568ddd8cd2e661fb345cdec6dbf47ce2cf7091106c791e5e43afc0bab"
+    },
+    "figures/nn_heatmaps/003583_method_e_first_peak_s01.png": {
+      "bytes": 1556253,
+      "sha256": "3ed436467ed026e076774333bb4c6d1bece09437160c7c4c19c31558a043f67b"
+    },
+    "figures/signed_mesh_Z/003583_method_e_first_peak_s01.png": {
+      "bytes": 915700,
+      "sha256": "f48415eb37691fda1cc70fae3796c0acc39626067d5b3f12ba1a345963ce673d"
+    },
+    "figures/representative_views/view_003202_five_methods.png": {
+      "bytes": 8590537,
+      "sha256": "8208f55660e795485aae774292d2cb7a56bc8b02b5303bdbd39efdcc6fd45d73"
+    },
+    "figures/representative_views/view_003202_five_methods.pdf": {
+      "bytes": 5578758,
+      "sha256": "834d90fbde3e65127942b21490bd87c4a2e75ff6fcc9bdf391c2881f78100aa7"
+    },
+    "figures/representative_views/view_003376_five_methods.png": {
+      "bytes": 8760656,
+      "sha256": "8a099da802b78d6b8ba651dbc4799c44eebc2c174e505522c5d63a4071e2fe1e"
+    },
+    "figures/representative_views/view_003376_five_methods.pdf": {
+      "bytes": 5537640,
+      "sha256": "a650b52215dd52f8768a46c1cd19244be700654bc87097ac7587a6be32e36400"
+    },
+    "figures/representative_views/view_003481_five_methods.png": {
+      "bytes": 7077118,
+      "sha256": "c0654c22551acd17e258957286b162271f3cfe02b0f5f3f8b67f1c87b02b983a"
+    },
+    "figures/representative_views/view_003481_five_methods.pdf": {
+      "bytes": 4244274,
+      "sha256": "f5d029e468f519007336942394a32a4acb73af6fdcacfd8900a3da6c341f0779"
+    }
+  },
+  "note": "This final record supersedes the earlier figure-manifest pending-visual-review status. Visual checks cover all3 representative layouts and both standalone heatmap formats; scientific quality is measured, not accepted by this format check."
+}

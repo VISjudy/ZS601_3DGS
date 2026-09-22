@@ -77,7 +77,8 @@ class _RasterizeGaussians(torch.autograd.Function):
             raster_settings.campos,
             raster_settings.prefiltered,
             raster_settings.antialiasing,
-            raster_settings.debug
+            raster_settings.debug,
+            raster_settings.depth_mode
         )
 
         # Invoke C++/CUDA rasterizer
@@ -91,6 +92,9 @@ class _RasterizeGaussians(torch.autograd.Function):
 
     @staticmethod
     def backward(ctx, grad_out_color, _, grad_out_depth):
+
+        if ctx.raster_settings.depth_mode != 0:
+            raise RuntimeError("First-hit depth modes are inference-only; weighted-depth backward is invalid.")
 
         # Restore necessary values from context
         num_rendered = ctx.num_rendered
@@ -154,6 +158,8 @@ class GaussianRasterizationSettings(NamedTuple):
     prefiltered : bool
     debug : bool
     antialiasing : bool
+    # 0: weighted inverse Z; 1: first center Z; 2: first ray-peak Z.
+    depth_mode : int = 0
 
 class GaussianRasterizer(nn.Module):
     def __init__(self, raster_settings):
@@ -174,6 +180,10 @@ class GaussianRasterizer(nn.Module):
     def forward(self, means3D, means2D, opacities, shs = None, colors_precomp = None, scales = None, rotations = None, cov3D_precomp = None):
         
         raster_settings = self.raster_settings
+        if raster_settings.depth_mode not in (0, 1, 2):
+            raise ValueError("depth_mode must be 0, 1 or 2")
+        if raster_settings.depth_mode and means3D.shape[0] >= 2**24:
+            raise ValueError("Packed float32 Gaussian IDs require fewer than 2**24 points")
 
         if (shs is None and colors_precomp is None) or (shs is not None and colors_precomp is not None):
             raise Exception('Please provide excatly one of either SHs or precomputed colors!')

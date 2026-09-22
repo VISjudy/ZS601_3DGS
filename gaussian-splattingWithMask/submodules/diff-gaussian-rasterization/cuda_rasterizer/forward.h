@@ -62,7 +62,9 @@ namespace FORWARD
 		const float* bg_color,
 		float* out_color,
 		float* depths,
-		float* depth);
+		float* depth,
+	int depth_mode, const float* means3D, const float* cov3D,
+	const float* viewmatrix, const float* cam_pos, float focal_x, float focal_y);
 }
 
 

@@ -1,0 +1,11 @@
+Processing ./rasterizer
+  Preparing metadata (setup.py): started
+  Preparing metadata (setup.py): finished with status 'done'
+Building wheels for collected packages: diff_gaussian_rasterization
+  Building wheel for diff_gaussian_rasterization (setup.py): started
+  Building wheel for diff_gaussian_rasterization (setup.py): finished with status 'done'
+  Created wheel for diff_gaussian_rasterization: filename=diff_gaussian_rasterization-0.0.0-cp313-cp313-linux_x86_64.whl size=3492341 sha256=21cefe2a1188c277eb0d7359c9e9fb6fc03a4689a804e042845550a7d895435e
+  Stored in directory: /tmp/pip-ephem-wheel-cache-1is4xlvd/wheels/f0/03/18/d25c60b5dc622444376a2763b6b84147ac634f553eadd02b43
+Successfully built diff_gaussian_rasterization
+Installing collected packages: diff_gaussian_rasterization
+Successfully installed diff_gaussian_rasterization-0.0.0

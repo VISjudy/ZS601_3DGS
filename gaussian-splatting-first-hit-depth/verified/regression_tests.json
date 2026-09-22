@@ -1,0 +1,117 @@
+{
+  "status": "PASS",
+  "legacy": [
+    {
+      "name": "003202.png",
+      "rgb_bit_exact": true,
+      "legacy_depth_png_bit_exact": true
+    },
+    {
+      "name": "003340.png",
+      "rgb_bit_exact": true,
+      "legacy_depth_png_bit_exact": true
+    },
+    {
+      "name": "003376.png",
+      "rgb_bit_exact": true,
+      "legacy_depth_png_bit_exact": true
+    },
+    {
+      "name": "003388.png",
+      "rgb_bit_exact": true,
+      "legacy_depth_png_bit_exact": true
+    },
+    {
+      "name": "003409.png",
+      "rgb_bit_exact": true,
+      "legacy_depth_png_bit_exact": true
+    },
+    {
+      "name": "003481.png",
+      "rgb_bit_exact": true,
+      "legacy_depth_png_bit_exact": true
+    },
+    {
+      "name": "003505.png",
+      "rgb_bit_exact": true,
+      "legacy_depth_png_bit_exact": true
+    },
+    {
+      "name": "003520.png",
+      "rgb_bit_exact": true,
+      "legacy_depth_png_bit_exact": true
+    },
+    {
+      "name": "003571.png",
+      "rgb_bit_exact": true,
+      "legacy_depth_png_bit_exact": true
+    },
+    {
+      "name": "003583.png",
+      "rgb_bit_exact": true,
+      "legacy_depth_png_bit_exact": true
+    }
+  ],
+  "matched_center_peak": [
+    {
+      "name": "003202.png",
+      "first_ids_equal": true,
+      "rgb_equal": true,
+      "center_vs_peak_mean_abs_mm": 6.325239658355713
+    },
+    {
+      "name": "003340.png",
+      "first_ids_equal": true,
+      "rgb_equal": true,
+      "center_vs_peak_mean_abs_mm": 5.55427360534668
+    },
+    {
+      "name": "003376.png",
+      "first_ids_equal": true,
+      "rgb_equal": true,
+      "center_vs_peak_mean_abs_mm": 5.63769006729126
+    },
+    {
+      "name": "003388.png",
+      "first_ids_equal": true,
+      "rgb_equal": true,
+      "center_vs_peak_mean_abs_mm": 5.272159576416016
+    },
+    {
+      "name": "003409.png",
+      "first_ids_equal": true,
+      "rgb_equal": true,
+      "center_vs_peak_mean_abs_mm": 4.967920303344727
+    },
+    {
+      "name": "003481.png",
+      "first_ids_equal": true,
+      "rgb_equal": true,
+      "center_vs_peak_mean_abs_mm": 4.24931001663208
+    },
+    {
+      "name": "003505.png",
+      "first_ids_equal": true,
+      "rgb_equal": true,
+      "center_vs_peak_mean_abs_mm": 5.995058536529541
+    },
+    {
+      "name": "003520.png",
+      "first_ids_equal": true,
+      "rgb_equal": true,
+      "center_vs_peak_mean_abs_mm": 5.245477676391602
+    },
+    {
+      "name": "003571.png",
+      "first_ids_equal": true,
+      "rgb_equal": true,
+      "center_vs_peak_mean_abs_mm": 4.2479777336120605
+    },
+    {
+      "name": "003583.png",
+      "first_ids_equal": true,
+      "rgb_equal": true,
+      "center_vs_peak_mean_abs_mm": 5.996638774871826
+    }
+  ]
+}

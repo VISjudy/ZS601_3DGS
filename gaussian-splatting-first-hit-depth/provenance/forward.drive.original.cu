@@ -268,51 +268,6 @@ __global__ void preprocessCUDA(int P, int D, int M,
 	tiles_touched[idx] = (rect_max.y - rect_min.y) * (rect_max.x - rect_min.x);
 }
 
-
-// First-contributor diagnostics. Gaussian support is infinite; q_min<=9 marks
-// a real intersection with the finite 3-sigma ellipsoid, but is NOT a gate.
-// Channels: invZ, ID+1, centerZ, peakZ, entryZ, exitZ, alpha, q_min.
-__device__ void firstDepth(const int id, const uint2 pix, int W, int H,
-    const float* means, const float* cov, const float* view, const float* eye,
-    float fx, float fy, float center_z, float alpha, int mode, float* out)
-{
-    const float* s = cov + 6 * id;
-    // Double precision prevents cancellation in tiny covariance determinants.
-    double q00 = (double)s[3]*s[5]-(double)s[4]*s[4];
-    double q01 = (double)s[2]*s[4]-(double)s[1]*s[5];
-    double q02 = (double)s[1]*s[4]-(double)s[2]*s[3];
-    double q11 = (double)s[0]*s[5]-(double)s[2]*s[2];
-    double q12 = (double)s[1]*s[2]-(double)s[0]*s[4];
-    double q22 = (double)s[0]*s[3]-(double)s[1]*s[1];
-    double det = (double)s[0]*q00+(double)s[1]*q01+(double)s[2]*q02;
-    out[1] = (float)(id+1); out[2] = center_z; out[6] = alpha;
-    out[7] = -1.f; // Explicit invalid covariance diagnostic.
-    if (!(det > 0.0) || !isfinite(det)) return;
-    q00/=det; q01/=det; q02/=det; q11/=det; q12/=det; q22/=det;
-    double cx = ((double)pix.x+.5-W*.5)/fx;
-    double cy = ((double)pix.y+.5-H*.5)/fy;
-    double dx = view[0]*cx+view[1]*cy+view[2];
-    double dy = view[4]*cx+view[5]*cy+view[6];
-    double dz = view[8]*cx+view[9]*cy+view[10];
-    double mx = (double)eye[0]-means[3*id];
-    double my = (double)eye[1]-means[3*id+1];
-    double mz = (double)eye[2]-means[3*id+2];
-    double qdx=q00*dx+q01*dy+q02*dz, qdy=q01*dx+q11*dy+q12*dz;
-    double qdz=q02*dx+q12*dy+q22*dz;
-    double A=dx*qdx+dy*qdy+dz*qdz, B=mx*qdx+my*qdy+mz*qdz;
-    if (!(A>0.0)) return;
-    double peak=-B/A;
-    double ex=mx+peak*dx, ey=my+peak*dy, ez=mz+peak*dz;
-    double qmin=ex*(q00*ex+q01*ey+q02*ez)+ey*(q01*ex+q11*ey+q12*ez)+ez*(q02*ex+q12*ey+q22*ez);
-    out[3]=(float)peak; out[7]=(float)qmin;
-    if (qmin <= 9.0) {
-        double half=sqrt(fmax(0.0, (9.0-qmin)/A));
-        out[4]=(float)(peak-half); out[5]=(float)(peak+half);
-    }
-    double z=mode==1 ? center_z : peak;
-    if (z>0.0 && isfinite(z)) out[0]=(float)(1.0/z);
-}
-
 // Main rasterization method. Collaboratively works on one tile per
 // block, each thread treats one pixel. Alternates between fetching 
 // and rasterizing data.
@@ -330,9 +285,7 @@ renderCUDA(
 	const float* __restrict__ bg_color,
 	float* __restrict__ out_color,
 	const float* __restrict__ depths,
-	float* __restrict__ invdepth,
-	int depth_mode, const float* means3D, const float* cov3D,
-	const float* viewmatrix, const float* cam_pos, float focal_x, float focal_y)
+	float* __restrict__ invdepth)
 {
 	// Identify current tile and associated min/max pixel range.
 	auto block = cg::this_thread_block();
@@ -364,9 +317,9 @@ renderCUDA(
 	uint32_t last_contributor = 0;
 	float C[CHANNELS] = { 0 };
 
-	float expected_invdepth = 0.0f;
-	bool first_recorded = false;
-	float first[8] = {0};
+	// 首击深度：只记录第一个碰到的高斯椭球的深度值
+	bool depth_recorded = false;
+	float first_invdepth = 0.0f;
 
 	// Iterate over batches until all done or range is complete
 	for (int i = 0; i < rounds; i++, toDo -= BLOCK_SIZE)
@@ -420,11 +373,11 @@ renderCUDA(
 			for (int ch = 0; ch < CHANNELS; ch++)
 				C[ch] += features[collected_id[j] * CHANNELS + ch] * alpha * T;
 
-			if (invdepth && depth_mode == 0)
-				expected_invdepth += (1 / depths[collected_id[j]]) * alpha * T;
-			else if (invdepth && !first_recorded) {
-				firstDepth(collected_id[j], pix, W, H, means3D, cov3D, viewmatrix, cam_pos, focal_x, focal_y, depths[collected_id[j]], alpha, depth_mode, first);
-				first_recorded = true;
+			// 首击深度：只记录第一个碰到的高斯椭球的深度值（之后不再更新）
+			if(invdepth && !depth_recorded)
+			{
+				first_invdepth = 1.0f / depths[collected_id[j]];
+				depth_recorded = true;
 			}
 
 			T = test_T;
@@ -444,10 +397,9 @@ renderCUDA(
 		for (int ch = 0; ch < CHANNELS; ch++)
 			out_color[ch * H * W + pix_id] = C[ch] + T * bg_color[ch];
 
-		if (invdepth) {
-			if (depth_mode == 0) invdepth[pix_id] = expected_invdepth;
-			else for (int k=0; k<8; ++k) invdepth[k*H*W+pix_id] = first[k];
-		}
+		// 输出首击深度（第一个碰到的高斯椭球的深度值）
+		if (invdepth)
+		invdepth[pix_id] = first_invdepth;
 	}
 }
 
@@ -464,9 +416,7 @@ void FORWARD::render(
 	const float* bg_color,
 	float* out_color,
 	float* depths,
-	float* depth,
-	int depth_mode, const float* means3D, const float* cov3D,
-	const float* viewmatrix, const float* cam_pos, float focal_x, float focal_y)
+	float* depth)
 {
 	renderCUDA<NUM_CHANNELS> << <grid, block >> > (
 		ranges,
@@ -480,7 +430,7 @@ void FORWARD::render(
 		bg_color,
 		out_color,
 		depths, 
-		depth, depth_mode, means3D, cov3D, viewmatrix, cam_pos, focal_x, focal_y);
+		depth);
 }
 
 void FORWARD::preprocess(int P, int D, int M,

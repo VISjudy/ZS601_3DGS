@@ -1,0 +1,83 @@
+{
+  "checked_at": "2026-09-22",
+  "scope": "Mini-Splatting and Mini-Splatting2 depth point formula; primary sources only",
+  "refs": {
+    "mini_splatting2": "5ec9202c2db7d900728bfc09733e85467cff885e",
+    "mini_splatting1": "c0d55811930dec3bfd3d61cad927093d166aaf82",
+    "paper_v1": "https://arxiv.org/html/2411.12788v1",
+    "paper_v2": "https://arxiv.org/html/2411.12788v2",
+    "paper_ms1": "https://arxiv.org/html/2403.14166"
+  },
+  "paper_contract": {
+    "selection": "per-pixel argmax_i w_i, with w_i equal to alpha-blending contribution",
+    "point": "midpoint of two ray/ellipsoid intersections, numerically equal to maximum Gaussian density along the ray",
+    "origin": "depth reinitialization is inherited from Mini-Splatting1",
+    "not_paper_original": [
+      "first contributor by center-depth order",
+      "nearest finite ellipsoid entry",
+      "same-first-ID center-vs-peak controlled ablation"
+    ]
+  },
+  "released_cuda_contract": {
+    "tile_sort": "Gaussian center camera-space p_view.z",
+    "alpha": "min(0.99, opacity*exp(power))",
+    "alpha_threshold": 0.00392156862745098,
+    "transmittance_stop": 0.0001,
+    "iso_ellipsoid_kappa": 3.0,
+    "point_parameter": "t_peak=-B/(2A)",
+    "selection": "maximum alpha*T among processed contributors with positive peak depth",
+    "discriminant_computed": true,
+    "discriminant_used_as_validity_gate": false,
+    "depth_reinit_consumes": "out_pts world-space point",
+    "rendered_depth_scalar_consumed": false
+  },
+  "math": {
+    "quadratic": "A t^2 + B t + C = 0",
+    "roots": "t_pm=(-B +/- sqrt(B^2-4AC))/(2A)",
+    "midpoint": "t_mid=-B/(2A)",
+    "ray_density_peak": "t_peak=-B/(2A)",
+    "uniform_scale_effect_fixed_id": "none on midpoint/peak; changes discriminant and coverage",
+    "isotropic": "t_peak=d dot (mu-o)/(d dot d); equals center point only when center lies on ray"
+  },
+  "recommended_profiles": [
+    {
+      "name": "first-center",
+      "id_rule": "first processed contributor in center-camera-Z tile order",
+      "depth_rule": "selected Gaussian center camera-Z"
+    },
+    {
+      "name": "same-first-peak",
+      "id_rule": "same ID as first-center",
+      "depth_rule": "camera-Z of ray maximum-density point",
+      "status": "controlled ablation, not paper-original"
+    },
+    {
+      "name": "paper-maxweight-peak",
+      "id_rule": "argmax alpha*T",
+      "depth_rule": "camera-Z of ray maximum-density point",
+      "status": "closest to paper and released code"
+    }
+  ],
+  "source_lines": [
+    {
+      "claim": "center-camera-Z tile sorting",
+      "url": "https://github.com/fatPeter/mini-splatting2/blob/5ec9202c2db7d900728bfc09733e85467cff885e/submodules/diff-gaussian-rasterization_ms/cuda_rasterizer/rasterizer_impl.cu#L119-L188"
+    },
+    {
+      "claim": "alpha threshold and transmittance termination",
+      "url": "https://github.com/fatPeter/mini-splatting2/blob/5ec9202c2db7d900728bfc09733e85467cff885e/submodules/diff-gaussian-rasterization_ms/cuda_rasterizer/forward.cu#L740-L758"
+    },
+    {
+      "claim": "3-sigma quadratic, ungated discriminant, peak and max-weight selection",
+      "url": "https://github.com/fatPeter/mini-splatting2/blob/5ec9202c2db7d900728bfc09733e85467cff885e/submodules/diff-gaussian-rasterization_ms/cuda_rasterizer/forward.cu#L763-L843"
+    },
+    {
+      "claim": "world-space out_pts consumed by depth reinitialization",
+      "url": "https://github.com/fatPeter/mini-splatting2/blob/5ec9202c2db7d900728bfc09733e85467cff885e/scene/gaussian_model.py#L561-L599"
+    },
+    {
+      "claim": "same core implementation predates MSv2",
+      "url": "https://github.com/fatPeter/mini-splatting/blob/c0d55811930dec3bfd3d61cad927093d166aaf82/submodules/diff-gaussian-rasterization_ms/cuda_rasterizer/forward.cu#L583-L621"
+    }
+  ]
+}

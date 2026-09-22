@@ -1,0 +1,37 @@
+{
+  "experiment": "first-hit-depth-v008",
+  "point_count": 7004696,
+  "view_ids": [
+    3202,
+    3340,
+    3376,
+    3388,
+    3409,
+    3481,
+    3505,
+    3520,
+    3571,
+    3583
+  ],
+  "input_cloud_sha256": "68f26fca61b4c1424c1f45f2f4983c4c42cf389abc23d6e0afadd9d48819de5b",
+  "source_gaussian_sha256": "430011f5e22c20359ecdaa2aeec621439b7c3ea56ed1500ab9f1478264973c28",
+  "gaussian_source": "v007 verified no-glass 1cm k3 RMS x0.5, float32 opacity1",
+  "scales": [
+    0.5,
+    0.5,
+    0.1
+  ],
+  "depth_modes": [
+    1,
+    2,
+    2
+  ],
+  "knn_k": 3,
+  "opacity_logit": 20,
+  "optimization_steps": 0,
+  "baseline_commit": "747907719f660fff1291e0385837d5dd84fd0509",
+  "world_units": "metres",
+  "depth_png": "uint16 one-channel camera Z in millimetres; 0 invalid",
+  "fixed_seed": 20260922,
+  "comparison": "same ten v007 virtual cameras; no view reselection"
+}

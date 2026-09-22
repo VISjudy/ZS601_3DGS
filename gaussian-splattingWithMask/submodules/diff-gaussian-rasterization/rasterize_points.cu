@@ -53,12 +53,15 @@ RasterizeGaussiansCUDA(
 	const torch::Tensor& campos,
 	const bool prefiltered,
 	const bool antialiasing,
-	const bool debug)
+	const bool debug,
+	const int depth_mode)
 {
   if (means3D.ndimension() != 2 || means3D.size(1) != 3) {
     AT_ERROR("means3D must have dimensions (num_points, 3)");
   }
   
+  TORCH_CHECK(depth_mode >= 0 && depth_mode <= 2, "Invalid depth mode");
+  TORCH_CHECK(depth_mode == 0 || means3D.size(0) < 16777216, "Packed ID precision limit");
   const int P = means3D.size(0);
   const int H = image_height;
   const int W = image_width;
@@ -70,7 +73,7 @@ RasterizeGaussiansCUDA(
   torch::Tensor out_invdepth = torch::full({0, H, W}, 0.0, float_opts);
   float* out_invdepthptr = nullptr;
 
-  out_invdepth = torch::full({1, H, W}, 0.0, float_opts).contiguous();
+  out_invdepth = torch::full({depth_mode == 0 ? 1 : 8, H, W}, 0.0, float_opts).contiguous();
   out_invdepthptr = out_invdepth.data<float>();
 
   torch::Tensor radii = torch::full({P}, 0, means3D.options().dtype(torch::kInt32));
@@ -118,7 +121,7 @@ RasterizeGaussiansCUDA(
 		out_invdepthptr,
 		antialiasing,
 		radii.contiguous().data<int>(),
-		debug);
+		debug, depth_mode);
   }
   return std::make_tuple(rendered, out_color, radii, geomBuffer, binningBuffer, imgBuffer, out_invdepth);
 }

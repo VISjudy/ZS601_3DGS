@@ -1,0 +1,17 @@
+{
+  "legacy_isolated": {
+    "valid_pixels": 164,
+    "max_depth_error_m": 1.1682510375976562e-05,
+    "max_straight_rgb_error": 5.221366882302014e-06
+  },
+  "status": "PASS",
+  "rgb_bit_exact_all_modes": true,
+  "same_first_ids": true,
+  "cpu_peak_max_error_m": 1.49391544468358e-07,
+  "cpu_qmin_max_error": 2.3338397276972955e-06,
+  "real_intersections_midpoint_max_error_m": 2.384185791015625e-07,
+  "center_max_error_m": 0.0,
+  "harmonic_background_mixing_max_m": 1.9135494232177734,
+  "nonintersection_pixels": 244,
+  "backward_guard": true
+}
