@@ -1,0 +1,18 @@
+{
+  "training": {
+    "units": "meters",
+    "iterations": 50000,
+    "position_lr_max_steps": 150000,
+    "validation_diagnostics": "on",
+    "val_interval": 5000,
+    "checkpoint_interval": 50000,
+    "val_ellipsoids": "on",
+    "final_test": "on",
+    "supervision_start": 1000,
+    "supervision_warmup": 4000,
+    "metric_depth_weight": 0.1,
+    "external_normal_weight": 0.05,
+    "seed": 42
+  },
+  "schedule_policy": "Same original 150k learning-rate/densification prefix; all groups truncated after 50k updates."
+}

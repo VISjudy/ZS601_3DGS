@@ -1,0 +1,11 @@
+{
+  "arm": "A",
+  "paper_arm": "A",
+  "dataset": "synthetic",
+  "depth_loss": false,
+  "normal_loss": false,
+  "virtual_views": 0,
+  "status": "running",
+  "initialization": "3cm cloud",
+  "virtual_rgb": null
+}

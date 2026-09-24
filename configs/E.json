@@ -1,0 +1,11 @@
+{
+  "arm": "E",
+  "paper_arm": "E",
+  "dataset": "synthetic",
+  "depth_loss": true,
+  "normal_loss": true,
+  "virtual_views": 200,
+  "status": "planned_not_run",
+  "initialization": "3cm cloud",
+  "virtual_rgb": "Frozen 1cm initialized Gaussians, SH0, opacity .999999, scale x0.5, alpha>=.95"
+}

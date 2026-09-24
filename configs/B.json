@@ -1,0 +1,11 @@
+{
+  "arm": "B",
+  "paper_arm": "B",
+  "dataset": "synthetic",
+  "depth_loss": true,
+  "normal_loss": false,
+  "virtual_views": 0,
+  "status": "queued",
+  "initialization": "3cm cloud",
+  "virtual_rgb": null
+}
