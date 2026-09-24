@@ -12,7 +12,7 @@ from runtime_v3 import fresh_topology,finish_epoch,prune
 
 def config(experiment='B',extra=()):
     return parse_args(['--experiment',experiment,'-s','data','-m','output','--point_cloud','p.las',
-        '--train_file','train.txt','--val_file','val.txt','--cameras_file','cameras.txt',*extra])[0]
+        '--train_file','train.txt','--val_file','val.txt','--cameras_file','cameras.txt','--test_file','test.txt',*extra])[0]
 
 class GeometryTests(unittest.TestCase):
     def setUp(self):

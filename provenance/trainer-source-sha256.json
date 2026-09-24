@@ -476,7 +476,7 @@
   "submodules/simple-knn/spatial.h": "972dfab0bba28da9165cbb34922cb9bb408f1853e6afd08bcdf34bd44db6a699",
   "surface_densify_v3.py": "64cbf19e51d6e457aab04eb0cbf8671077da18c024db6115b4044c58d1349d1b",
   "test_experiment_presets_v3.py": "e9474efe6158f99a05cfa415eb2d0d25f2fb0f4de846a8117f9eff55eef38c94",
-  "test_geometry_v3.py": "8affad29b593688b93d7c7f93c092726e0157b53eb32872339269ae38070b92b",
+  "test_geometry_v3.py": "5e682e5b031aa30707a81da51bd362eb86372fca92d59b76e1ead9bfe09b7575",
   "test_lidar_depth_v3.py": "168aeba9b52052651980ed80771be2dc72be24b96cf00ce1be7669726d775c83",
   "test_precomputed_v3.py": "7183bf61803af8158920f59c0a28fdeb08ca3eedf89050db18f35b8e34d19f30",
   "test_preprocess_v3.py": "43775e8a1b4f639507da6ca64566cf2307b54eed46bb96080a545f8455427877",
