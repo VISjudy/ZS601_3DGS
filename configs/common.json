@@ -5,7 +5,7 @@
     "position_lr_max_steps": 150000,
     "validation_diagnostics": "on",
     "val_interval": 5000,
-    "checkpoint_interval": 50000,
+    "checkpoint_interval": 20000,
     "val_ellipsoids": "on",
     "final_test": "on",
     "supervision_start": 1000,

@@ -13,7 +13,9 @@ Images, point clouds, supervision arrays, checkpoints and results remain in Goog
 | E | Same | on | on | 200 |
 | F-real | Real LiDAR / acquired RGB | on | on | 200, generated from real LiDAR |
 
-All groups use 50,000 iterations, validation every 5,000 steps and a final checkpoint at 50,000.
+All groups use 50,000 iterations and validation every 5,000 steps. From the September 25 recovery,
+checkpoints are saved at 20,000, 40,000 and the final 50,000 steps. Historical A completed with
+only its 50,000 checkpoint; it is preserved and is not rerun to create earlier checkpoints.
 For consistency with the already-running A, `position_lr_max_steps=150000` and the existing
 densification / warm-up schedule are unchanged. This is a common truncated schedule, not a
 new 50k learning-rate schedule. Depth weight is 0.1, normal weight 0.05, ramp starts at 1,000
